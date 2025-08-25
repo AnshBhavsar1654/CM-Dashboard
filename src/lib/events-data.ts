@@ -1,4 +1,3 @@
-
 'use server';
 
 import { google } from 'googleapis';
@@ -88,87 +87,89 @@ function deg2rad(deg: number) {
 export const getCachedEventsData = cache(
   async (): Promise<EventData[]> => {
     console.log('Fetching fresh data from Google Sheets...');
-    try {
-      const data = await readSheet();
-      if (data.length > 0) {
-        return data;
-      }
-      console.log('No data from Google Sheets, returning test events with images');
-    } catch (error) {
-      console.error("Failed to fetch data from Google Sheets:", error);
-      console.log('Returning test events with images for development');
-    }
-    
-    // Return test events with images for development
-    const testEvents: EventData[] = [
-      {
-        id: 1,
-        eventName: 'Test Event with Image 1',
-        date: '2024-01-15',
-        eventDateMs: new Date('2024-01-15').getTime(),
-        district: 'Test District A',
-        location: 'Test Location A',
-        type: 'public event',
-        latitude: 17.3850,
-        longitude: 78.4867,
-        tags: ['test', 'public'],
-        distanceTravelled: 0,
-        department: 'Test Department',
-        imgLink: 'https://placehold.co/640x360/4f46e5/white?text=Test+Event+1',
-      },
-      {
-        id: 2,
-        eventName: 'Test Event with Image 2',
-        date: '2024-01-16',
-        eventDateMs: new Date('2024-01-16').getTime(),
-        district: 'Test District B',
-        location: 'Test Location B',
-        type: 'government event',
-        latitude: 17.4000,
-        longitude: 78.5000,
-        tags: ['test', 'government'],
-        distanceTravelled: 10,
-        department: 'Test Department 2',
-        imgLink: 'https://placehold.co/640x360/e11d48/white?text=Test+Event+2',
-      },
-      {
-        id: 3,
-        eventName: 'Test Event with Image 3',
-        date: '2024-01-17',
-        eventDateMs: new Date('2024-01-17').getTime(),
-        district: 'Test District C',
-        location: 'Test Location C',
-        type: 'social event',
-        latitude: 17.4200,
-        longitude: 78.4500,
-        tags: ['test', 'social'],
-        distanceTravelled: 5,
-        department: 'Test Department 3',
-        imgLink: 'https://placehold.co/640x360/10b981/white?text=Test+Event+3',
-      },
-      {
-        id: 4,
-        eventName: 'Test Event Without Image',
-        date: '2024-01-18',
-        eventDateMs: new Date('2024-01-18').getTime(),
-        district: 'Test District D',
-        location: 'Test Location D',
-        type: 'political event',
-        latitude: 17.3600,
-        longitude: 78.4700,
-        tags: ['test', 'political'],
-        distanceTravelled: 15,
-        department: 'Test Department 4',
-      },
-    ];
-    return testEvents;
+    // IMPORTANT: Do not return fallback data from inside the cached function,
+    // otherwise it will be cached and appear stale for hours.
+    const data = await readSheet();
+    return data;
   },
   ['events-data'],
   { revalidate: 21600, tags: ['events-data'] } // 6 Hrs = 6*60*60 
 );
 
 export async function getEventsData(): Promise<EventData[]> {
-    return getCachedEventsData();
+    try {
+        return await getCachedEventsData();
+    } catch (error) {
+        // If reading the sheet fails, log details and return dev-only fallback.
+        console.error('getEventsData() failed to load from Google Sheets:', error);
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('Returning local test events (not cached).');
+            const testEvents: EventData[] = [
+              {
+                id: 1,
+                eventName: 'Test Event with Image 1',
+                date: '2024-01-15',
+                eventDateMs: new Date('2024-01-15').getTime(),
+                district: 'Test District A',
+                location: 'Test Location A',
+                type: 'public event',
+                latitude: 17.3850,
+                longitude: 78.4867,
+                tags: ['test', 'public'],
+                distanceTravelled: 0,
+                department: 'Test Department',
+                imgLink: 'https://placehold.co/640x360/4f46e5/white?text=Test+Event+1',
+              },
+              {
+                id: 2,
+                eventName: 'Test Event with Image 2',
+                date: '2024-01-16',
+                eventDateMs: new Date('2024-01-16').getTime(),
+                district: 'Test District B',
+                location: 'Test Location B',
+                type: 'government event',
+                latitude: 17.4000,
+                longitude: 78.5000,
+                tags: ['test', 'government'],
+                distanceTravelled: 10,
+                department: 'Test Department 2',
+                imgLink: 'https://placehold.co/640x360/e11d48/white?text=Test+Event+2',
+              },
+              {
+                id: 3,
+                eventName: 'Test Event with Image 3',
+                date: '2024-01-17',
+                eventDateMs: new Date('2024-01-17').getTime(),
+                district: 'Test District C',
+                location: 'Test Location C',
+                type: 'social event',
+                latitude: 17.4200,
+                longitude: 78.4500,
+                tags: ['test', 'social'],
+                distanceTravelled: 5,
+                department: 'Test Department 3',
+                imgLink: 'https://placehold.co/640x360/10b981/white?text=Test+Event+3',
+              },
+              {
+                id: 4,
+                eventName: 'Test Event Without Image',
+                date: '2024-01-18',
+                eventDateMs: new Date('2024-01-18').getTime(),
+                district: 'Test District D',
+                location: 'Test Location D',
+                type: 'political event',
+                latitude: 17.3600,
+                longitude: 78.4700,
+                tags: ['test', 'political'],
+                distanceTravelled: 15,
+                department: 'Test Department 4',
+              },
+            ];
+            return testEvents;
+        }
+        // In production, rethrow so the error surfaces and does not get cached.
+        throw error;
+    }
 }
 
 export async function revalidateEvents() {
@@ -186,10 +187,16 @@ async function readSheet(): Promise<EventData[]> {
 
   // Ensure we always read from the sheet named "Data"
   // We first resolve the exact sheet title from metadata to avoid case/locale issues
-  const meta = await sheets.spreadsheets.get({
-    spreadsheetId,
-    fields: 'sheets.properties.title'
-  });
+  let meta;
+  try {
+    meta = await sheets.spreadsheets.get({
+      spreadsheetId,
+      fields: 'sheets.properties.title'
+    });
+  } catch (e: any) {
+    console.error('Google Sheets API spreadsheets.get failed:', e?.response?.status, e?.response?.data || e?.message);
+    throw e;
+  }
   const titles = (meta.data.sheets || []).map(s => s.properties?.title || '');
   const dataTitle = titles.find(t => t.toLowerCase() === 'data');
   if (!dataTitle) {
@@ -198,10 +205,16 @@ async function readSheet(): Promise<EventData[]> {
   // Read entire sheet (no explicit column range)
   const range = `${dataTitle}`;
 
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range
-  });
+  let res;
+  try {
+    res = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range
+    });
+  } catch (e: any) {
+    console.error('Google Sheets API values.get failed:', e?.response?.status, e?.response?.data || e?.message);
+    throw e;
+  }
 
   const values = res.data.values || [];
   console.log(`Found ${values.length} rows in the spreadsheet`);
@@ -216,16 +229,16 @@ async function readSheet(): Promise<EventData[]> {
   });
   
   const columnMapping = {
-    eventName: 'eventname',
-    date: 'date',
-    type: 'typeofevents',
-    district: 'district',
-    location: 'location',
-    latitude: 'latitude',
-    longitude: 'longitude',
-    tags: 'tags',
-    department: 'department',
-    imgLink: 'img_link',
+    eventName: 'eventtitle',        // Changed from 'eventname' to match your "Event Title" header
+    date: 'date',                   // This matches your "Date" column
+    type: 'eventtype',              // Changed to match your "Event Type" column
+    district: 'district',           // Matches your "District" column
+    location: 'venue',              // Changed to match your "Venue" column
+    latitude: 'latitude',           // Matches your "Latitude" column
+    longitude: 'longitude',         // Matches your "Longitude" column
+    tags: 'geotag',                 // Changed to match your "Geo Tag" column
+    department: 'sector',           // Changed to match your "Sector" column
+    imgLink: 'imagelink',           // Changed to match your "Image Link" column
   };
 
   // Only validate required columns (date and event name)
