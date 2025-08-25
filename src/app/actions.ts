@@ -1,3 +1,5 @@
+// Fetches a fresh copy of events from Google Sheets and returns the number of events fetched
+
 'use server'
 
 import { getEventsData, revalidateEvents } from '@/lib/events-data'

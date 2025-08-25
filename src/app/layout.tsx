@@ -1,3 +1,5 @@
+// Root layout - title, description, global styles, map, theme, notifications
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"

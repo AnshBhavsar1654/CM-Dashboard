@@ -6,6 +6,7 @@ import 'dotenv/config';
 import { getHomeCoordinates } from './admin-config';
 import { unstable_cache as cache, revalidateTag } from 'next/cache';
 
+// Create a Google JWT auth client for the service account using readonly Sheets scope.
 function getJwt() {
   const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
   const privateKeyRaw = process.env.GOOGLE_SHEETS_PRIVATE_KEY;
@@ -21,6 +22,14 @@ function getJwt() {
   });
 }
 
+/**
+ * Parse various date formats into a Date.
+ * Supported examples:
+ * - dd/mm/yyyy (e.g., 12/06/2025)
+ * - dd-mmm-yyyy (e.g., 31-May-2025)
+ * - Fallback to Date(dateStr) for ISO-like formats (e.g., 2025-05-31)
+ * Returns null if parsing fails.
+ */
 function parseDateString(dateStr: string): Date | null {
     if (!dateStr || typeof dateStr !== 'string') return null;
 
@@ -96,8 +105,18 @@ export const getCachedEventsData = cache(
   { revalidate: 21600, tags: ['events-data'] } // 6 Hrs = 6*60*60 
 );
 
+/**
+ * Public accessor for events data.
+ * - Returns cached data when Google Sheets is reachable.
+ * - In development only, returns local test data if Google access fails.
+ * - In production, errors are surfaced to avoid caching failures silently.
+ */
 export async function getEventsData(): Promise<EventData[]> {
     try {
+        // In development, bypass cache to pick up latest sheet changes instantly.
+        if (process.env.NODE_ENV !== 'production') {
+            return await readSheet();
+        }
         return await getCachedEventsData();
     } catch (error) {
         // If reading the sheet fails, log details and return dev-only fallback.
@@ -176,6 +195,14 @@ export async function revalidateEvents() {
   revalidateTag('events-data');
 }
 
+/**
+ * Core function to read and transform Google Sheet rows into EventData objects.
+ * 1) Build Google Sheets client with JWT auth.
+ * 2) Resolve the exact title of the "Data" worksheet from spreadsheet metadata.
+ * 3) Read all rows from that worksheet.
+ * 4) Normalize header row and map columns via `columnMapping`.
+ * 5) Validate required columns, parse/transform each row into EventData.
+ */
 async function readSheet(): Promise<EventData[]> {
   console.log('Reading data from Google Sheets...');
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
@@ -229,16 +256,17 @@ async function readSheet(): Promise<EventData[]> {
   });
   
   const columnMapping = {
-    eventName: 'eventtitle',        // Changed from 'eventname' to match your "Event Title" header
-    date: 'date',                   // This matches your "Date" column
-    type: 'eventtype',              // Changed to match your "Event Type" column
-    district: 'district',           // Matches your "District" column
-    location: 'venue',              // Changed to match your "Venue" column
-    latitude: 'latitude',           // Matches your "Latitude" column
-    longitude: 'longitude',         // Matches your "Longitude" column
-    tags: 'geotag',                 // Changed to match your "Geo Tag" column
-    department: 'sector',           // Changed to match your "Sector" column
-    imgLink: 'imagelink',           // Changed to match your "Image Link" column
+    // Maps our EventData fields (left) to normalized header keys (right)
+    eventName: 'eventtitle',
+    date: 'date',
+    type: 'eventtype',
+    district: 'district',
+    location: 'venue',
+    latitude: 'latitude',
+    longitude: 'longitude',
+    tags: 'geotag',
+    department: 'sector',
+    imgLink: 'sourcelink'
   };
 
   // Only validate required columns (date and event name)
