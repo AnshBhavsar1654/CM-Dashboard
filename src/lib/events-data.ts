@@ -266,7 +266,7 @@ async function readSheet(): Promise<EventData[]> {
     longitude: 'longitude',
     tags: 'geotag',
     department: 'sector',
-    imgLink: 'sourcelink'
+    imgLink: 'imagelink'
   };
 
   // Only validate required columns (date and event name)

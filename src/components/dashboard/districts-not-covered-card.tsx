@@ -2,6 +2,8 @@
 
 import { MapPin, AlertCircle } from "lucide-react"; // Icons for UI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 
 interface DistrictsNotCoveredCardProps {
   notCoveredDistricts: string[]; // List of district names not covered
@@ -45,7 +47,8 @@ export function DistrictsNotCoveredCard({ notCoveredDistricts }: DistrictsNotCov
               {notCoveredDistricts.length}
             </div>
 
-            {/* List of up to 5 districts */}
+            {/* List of up to 5 districts */
+            }
             <div className="mt-2 space-y-1 flex-grow overflow-y-auto">
               {displayDistricts.map((district, _index) => (
                 <div key={_index} className="flex items-center text-sm">
@@ -57,9 +60,29 @@ export function DistrictsNotCoveredCard({ notCoveredDistricts }: DistrictsNotCov
 
               {/* Show "+X more" if there are hidden districts */}
               {remainingCount > 0 && (
-                <div className="text-sm text-muted-foreground mt-1">
-                  + {remainingCount} more district{remainingCount > 1 ? 's' : ''}
-                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="link" className="px-0 h-auto text-sm text-muted-foreground mt-1">
+                      + {remainingCount} more district{remainingCount > 1 ? 's' : ''}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Unvisited Districts</DialogTitle>
+                      <DialogDescription>
+                        Full list of districts not covered yet.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[50vh] overflow-y-auto mt-2 space-y-1">
+                      {notCoveredDistricts.map((district, idx) => (
+                        <div key={`${district}-${idx}`} className="flex items-center text-sm">
+                          <MapPin className="h-4 w-4 mr-2 text-red-500 flex-shrink-0" />
+                          <span>{district}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               )}
             </div>
           </>

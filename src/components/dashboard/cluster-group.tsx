@@ -7,14 +7,8 @@ import * as React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import type { EventData } from '@/lib/types';
 import { formatDisplayDate } from '@/lib/date';
-import dynamic from 'next/dynamic';
 import L from 'leaflet';
-
-// Dynamically import the marker cluster group to avoid SSR issues in Next.js
-const MarkerClusterGroup = dynamic(
-  () => import('./marker-cluster-group'),
-  { ssr: false }
-);
+import MarkerClusterGroup from './marker-cluster-group';
 
 interface ClusterGroupProps {
   data: EventData[]; // Array of event data containing location + metadata

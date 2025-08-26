@@ -110,6 +110,12 @@ export function TotalDistanceCard({ value, events }: { value: number; events?: E
 export function DistrictsCoveredCard({ value }: { value: number }) {
   const coveragePercent = Math.round((value / 33) * 100);
   const remaining = 33 - value;
+  // Color thresholds for coverage: <40 red, 40-79 yellow, >=80 green
+  const indicatorClass = coveragePercent < 40
+    ? "bg-red-500"
+    : coveragePercent < 80
+      ? "bg-yellow-500"
+      : "bg-green-500";
   
   return (
     <Card className="bg-gradient-to-br from-card via-card/95 to-amber-500/10 border border-amber-500/30 shadow-lg hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-300 hover:scale-105 group dark:bg-card dark:border-amber-500/50 dark:hover:shadow-amber-500/30 dark:hover:border-amber-500/60 mx-auto w-full max-w-[350px] h-full flex flex-col">
@@ -133,13 +139,12 @@ export function DistrictsCoveredCard({ value }: { value: number }) {
             <span className="text-xs text-muted-foreground">Coverage</span>
             <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{coveragePercent}%</span>
           </div>
-          <Progress value={coveragePercent} className="h-1.5" />
+          <Progress value={coveragePercent} className="h-1.5" indicatorClassName={indicatorClass} />
         </div>
       </CardContent>
     </Card>
   );
 }
-
  
 // Displays count of cultural & religious events with avg/month and a simple trend.
 export function CulturalReligiousEventsCard({ value, events }: { value: number; events?: EventData[] }) {
