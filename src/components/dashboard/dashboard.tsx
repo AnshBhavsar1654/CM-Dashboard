@@ -1,3 +1,4 @@
+// The main container for the dashboard page
 
 "use client";
 
@@ -19,34 +20,48 @@ import { MonthlyEventChart } from "@/components/dashboard/monthly-event-chart";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Filter } from 'lucide-react'
-import { ImageCarousel } from "@/components/dashboard/image-carousel"
+import { Filter } from "lucide-react";
+import { ImageCarousel } from "@/components/dashboard/image-carousel";
 
+/**
+ Handles:
+ * Displaying charts, stats, and tables
+ * Loading state with skeletons
+ * Filtering by date, district, and event type
+ * Syncing filters with the URL (deep-linking/sharing filters)
+ * Interactive UI (map, carousel, filters button, etc.)
+ */
 export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
+  // All events and filtered subset
   const [allEvents, setAllEvents] = React.useState<EventData[]>(initialEvents);
   const [filteredEvents, setFilteredEvents] = React.useState<EventData[]>(initialEvents);
+
+  // Loading state: true if no initial events
   const [isLoading, setIsLoading] = React.useState(!initialEvents || initialEvents.length === 0);
-  
+
   // Filter states
   const [date, setDate] = React.useState<DateRange | undefined>(undefined);
   const [district, setDistrict] = React.useState<string | undefined>(undefined);
   const [eventType, setEventType] = React.useState<string | undefined>(undefined);
 
-  // URL sync
+  // URL sync helpers
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // Reset states whenever new initialEvents come in
   React.useEffect(() => {
     setAllEvents(initialEvents);
     setFilteredEvents(initialEvents);
     setIsLoading(!initialEvents || initialEvents.length === 0);
   }, [initialEvents]);
 
-
-  // Initialize filters from URL on mount
+  /**
+   * On mount → initialize filters from URL query parameters
+   * - Reads `district`, `type`, `from`, `to`
+   * - Applies them to state
+   */
   React.useEffect(() => {
-    // read once on client mount
     const d = searchParams.get("district") || undefined;
     const t = searchParams.get("type") || undefined;
     const from = searchParams.get("from") || undefined;
@@ -59,12 +74,16 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
         const fromDate = from ? new Date(from) : undefined;
         const toDate = to ? new Date(to) : undefined;
         setDate({ from: fromDate, to: toDate });
-      } catch {}
+      } catch {
+        // Invalid date values ignored
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Push filters to URL (replace) when they change
+  /**
+   * Whenever filters change → push updated filters into the URL
+   * Example: /dashboard?district=Ahmedabad&type=Health&from=2024-08-01&to=2024-08-31
+   */
   React.useEffect(() => {
     const params = new URLSearchParams();
     if (district) params.set("district", district);
@@ -76,6 +95,9 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }, [district, eventType, date?.from, date?.to, router, pathname]);
 
+  /**
+   * Apply filters to events whenever filters or events change
+   */
   React.useEffect(() => {
     if (isLoading) return;
 
@@ -84,21 +106,16 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
       if (date?.from || date?.to) {
         const fromMs = date?.from ? date.from.getTime() : undefined;
         const toMsExclusive = date?.to ? addDays(date.to, 1).getTime() : undefined;
+
         if (fromMs !== undefined && event.eventDateMs < fromMs) return false;
         if (toMsExclusive !== undefined && event.eventDateMs >= toMsExclusive) return false;
       }
 
       // District filter
-      if (district && event.district !== district) {
-        return false;
-      }
+      if (district && event.district !== district) return false;
 
       // Event type filter
-      if (eventType && event.type !== eventType) {
-        return false;
-      }
-
-
+      if (eventType && event.type !== eventType) return false;
 
       return true;
     });
@@ -106,25 +123,28 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
     setFilteredEvents(filtered);
   }, [date, district, eventType, allEvents, isLoading]);
 
-  
+  /**
+   * LOADING STATE → Show skeletons while waiting for events
+   */
   if (isLoading) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-transparent text-foreground">
         <DashboardHeader />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+          {/* Skeleton placeholders for dashboard layout */}
           <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
             <Skeleton className="lg:col-span-4 h-24" />
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 md:gap-8">
-             <Skeleton className="h-24 lg:col-span-2" />
-             <Skeleton className="h-24" />
-             <Skeleton className="h-24" />
-             <div className="hidden lg:block"></div>
-             <Skeleton className="h-24" />
-             <Skeleton className="h-24" />
-             <Skeleton className="h-24" />
-             <Skeleton className="h-24" />
-             <Skeleton className="h-24" />
+            <Skeleton className="h-24 lg:col-span-2" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <div className="hidden lg:block"></div>
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
           </div>
           <div className="grid grid-cols-1 gap-4 md:gap-8">
             <Skeleton className="h-[400px] w-full" />
@@ -138,13 +158,19 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
           </div>
         </main>
       </div>
-    )
+    );
   }
 
+  /**
+   * MAIN DASHBOARD UI → Render charts, stats, filters, etc.
+   */
   return (
     <div className="flex min-h-screen w-full flex-col bg-transparent text-foreground">
+      {/* Header */}
       <DashboardHeader />
+
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        {/* Stats + Carousel */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 md:gap-6">
           <div className="lg:col-span-3 order-2 lg:order-1 flex flex-col">
             <StatsGrid data={filteredEvents} />
@@ -153,20 +179,34 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
             <ImageCarousel events={allEvents} />
           </div>
         </div>
+
+        {/* Map + Event Types */}
         <div className="grid grid-cols-1 gap-4 md:gap-8 lg:grid-cols-2">
           <MapView data={filteredEvents} selectedDistrict={district} />
           <EventTypeChart data={filteredEvents} />
         </div>
+
+        {/* District breakdown */}
         <div className="grid grid-cols-1 gap-4 md:gap-8">
-          <DistrictEventChart data={allEvents} onDistrictSelect={setDistrict} selectedDistrict={district} />
+          <DistrictEventChart
+            data={allEvents}
+            onDistrictSelect={setDistrict}
+            selectedDistrict={district}
+          />
         </div>
+
+        {/* Monthly Trends */}
         <div className="grid grid-cols-1 gap-4 md:gap-8">
           <MonthlyEventChart data={filteredEvents} />
         </div>
+
+        {/* Event Table */}
         <div className="grid grid-cols-1 gap-4 md:gap-8">
           <EventsTable data={filteredEvents} />
         </div>
       </main>
+
+      {/* Floating Filters Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <TooltipProvider>
           <Tooltip>
@@ -181,13 +221,15 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
-              <PopoverContent 
-                className="w-96 bg-gradient-to-br from-background/80 via-background/70 to-amber-500/5 backdrop-blur-lg border border-amber-500/20 shadow-2xl" 
+
+              {/* Popover → contains the filter controls */}
+              <PopoverContent
+                className="w-96 bg-gradient-to-br from-background/80 via-background/70 to-amber-500/5 backdrop-blur-lg border border-amber-500/20 shadow-2xl"
                 align="end"
                 side="top"
                 sideOffset={12}
               >
-                <DashboardFilters 
+                <DashboardFilters
                   allEvents={allEvents}
                   date={date}
                   district={district}
@@ -195,7 +237,11 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
                   onDateChange={setDate}
                   onDistrictChange={setDistrict}
                   onEventTypeChange={setEventType}
-                  onClearAll={() => { setDate(undefined); setDistrict(undefined); setEventType(undefined); }}
+                  onClearAll={() => {
+                    setDate(undefined);
+                    setDistrict(undefined);
+                    setEventType(undefined);
+                  }}
                 />
               </PopoverContent>
             </Popover>

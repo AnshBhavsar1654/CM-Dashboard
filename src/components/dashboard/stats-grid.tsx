@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { EventData } from "@/lib/types";
@@ -18,8 +17,9 @@ interface StatsGridProps {
 }
 
 export function StatsGrid({ data }: StatsGridProps) {
+    // useMemo ensures that stats are recalculated only when `data` changes
     const stats = useMemo(() => {
-        // Hardcoded list of 33 Gujarat districts
+        // Hardcoded list of all 33 Gujarat districts
         const gujaratDistricts = [
             "Ahmedabad", "Gandhinagar", "Mahesana", "Banaskantha", "Sabarkantha", 
             "Aravalli", "Patan", "Rajkot", "Surat", "Vadodara", "Anand", "Amreli", 
@@ -29,25 +29,29 @@ export function StatsGrid({ data }: StatsGridProps) {
             "Morbi", "Botad", "Chhota Udepur"
         ];
         
-        // Get districts from filtered events (excluding "Out of State")
+        // Extract unique districts covered from the data (ignoring "Out of State")
         const coveredDistricts = new Set(
             data
                 .filter(event => event.district && event.district !== "Out of State")
                 .map(event => event.district)
         );
         
-        // Calculate not covered districts by comparing against hardcoded list
+        // Find which districts are not covered by subtracting from the master list
         const notCoveredDistricts = gujaratDistricts.filter(district => !coveredDistricts.has(district));
         
+        // Define event type categories for grouping
         const governmentTypes = ["government event"];
         const publicTypes = ["public event"];
         const socialTypes = ["social event"];
         const culturalReligiousTypes = ["cultural & religious event"];
         const politicalTypes = ["political event"];
-        const otherTypes = ["other event", "private event", "personal event"]; // Include private and personal events
+        // Other includes multiple kinds: other, private, personal
+        const otherTypes = ["other event", "private event", "personal event"]; 
 
+        // Count number of events in each category
         const categorizedData = data.reduce((acc, event) => {
             const eventTypeLower = event.type.toLowerCase();
+
             if (governmentTypes.includes(eventTypeLower)) {
                 acc.governmentEvents++;
             } else if (publicTypes.includes(eventTypeLower)) {
@@ -58,9 +62,10 @@ export function StatsGrid({ data }: StatsGridProps) {
                 acc.culturalReligiousEvents++;
             } else if (politicalTypes.includes(eventTypeLower)) {
                 acc.politicalEvents++;
-            } else if (otherTypes.includes(eventTypeLower)) { // Check for other events including private and personal
+            } else if (otherTypes.includes(eventTypeLower)) {
                 acc.otherEvents++;
             }
+
             return acc;
         }, {
             governmentEvents: 0,
@@ -71,16 +76,17 @@ export function StatsGrid({ data }: StatsGridProps) {
             otherEvents: 0,
         });
         
+        // Return final computed stats
         return {
-            totalEvents: data.length,
-            totalDistance: data.reduce((acc, event) => acc + event.distanceTravelled, 0),
-            districtsCovered: coveredDistricts.size,
-            notCoveredDistricts: notCoveredDistricts,
-            ...categorizedData
+            totalEvents: data.length, // Total number of events
+            totalDistance: data.reduce((acc, event) => acc + event.distanceTravelled, 0), // Sum of distances
+            districtsCovered: coveredDistricts.size, // Unique covered districts
+            notCoveredDistricts: notCoveredDistricts, // Remaining uncovered districts
+            ...categorizedData // Spread event category counts
         };
     }, [data]);
 
-    // Combine all event cards including Cultural & Religious
+    // Prepare all event-related cards (Stat cards + Cultural/Religious card)
     const allEventCards = [
         { 
             component: <CulturalReligiousEventsCard value={stats.culturalReligiousEvents} events={data} />,
@@ -92,11 +98,14 @@ export function StatsGrid({ data }: StatsGridProps) {
                 value={stats[item.key]} 
                 Icon={item.Icon} 
                 events={data}
-                eventTypeFilter={item.title === "Govt. Events" ? "government event" :
-                              item.title === "Public Events" ? "public event" :
-                              item.title === "Social Events" ? "social event" :
-                              item.title === "Political Events" ? "political event" :
-                              item.title === "Other Events" ? ["other event", "private event", "personal event"] : ""}
+                // Special handling: some cards filter multiple event types
+                eventTypeFilter={
+                    item.title === "Govt. Events" ? "government event" :
+                    item.title === "Public Events" ? "public event" :
+                    item.title === "Social Events" ? "social event" :
+                    item.title === "Political Events" ? "political event" :
+                    item.title === "Other Events" ? ["other event", "private event", "personal event"] : ""
+                }
             />,
             key: item.key
         }))
@@ -104,16 +113,16 @@ export function StatsGrid({ data }: StatsGridProps) {
 
     return (
         <div className="grid gap-2 md:grid-cols-1 lg:grid-cols-1 md:gap-4 w-full h-full min-h-[320px]">
-            {/* Top 3 main cards in a responsive grid */}
+            {/* Top row: Summary cards (Total Events, Distance, Districts Covered) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 justify-center">
                 <TotalEventsCard value={stats.totalEvents} events={data} />
                 <TotalDistanceCard value={stats.totalDistance} events={data} />
                 <DistrictsCoveredCard value={stats.districtsCovered} />
             </div>
             
-            {/* Event type cards and Districts Not Covered card in a flex layout */}
+            {/* Lower row: Event type cards + Districts Not Covered */}
             <div className="flex flex-col md:flex-row gap-2 flex-grow">
-                {/* Event type cards in a 2x3 grid */}
+                {/* Grid of event type cards */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 flex-grow">
                     {allEventCards.map((card, _index) => (
                         <div key={card.key} className="w-full">
@@ -122,7 +131,7 @@ export function StatsGrid({ data }: StatsGridProps) {
                     ))}
                 </div>
                 
-                {/* Districts not covered card - same width as Districts Covered card */}
+                {/* Districts not covered card (fixed max width) */}
                 <div className="flex-shrink-0 w-full max-w-[350px] flex">
                     <DistrictsNotCoveredCard notCoveredDistricts={stats.notCoveredDistricts} />
                 </div>

@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,17 +11,24 @@ interface ImageCarouselProps {
 }
 
 export function ImageCarousel({ events }: ImageCarouselProps) {
-  // Filter events that have image links
+  // Extract only events that contain valid image links
   const eventsWithImages = React.useMemo(() => {
     return events.filter(event => event.imgLink && event.imgLink.trim() !== "");
   }, [events]);
 
+  // State for currently visible image index
   const [currentIndex, setCurrentIndex] = React.useState(0);
+
+  // Track if current image failed to load
   const [imageError, setImageError] = React.useState<string | null>(null);
+
+  // Track if we should bypass proxy and load the direct image URL
   const [useDirectUrl, setUseDirectUrl] = React.useState(false);
+
+  // Track image loading state (to show skeleton/loading spinner)
   const [imageLoading, setImageLoading] = React.useState(true);
 
-  // Reset index and error state when events change
+  // Reset carousel state whenever the events list changes
   React.useEffect(() => {
     setCurrentIndex(0);
     setImageError(null);
@@ -30,30 +36,29 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
     setUseDirectUrl(false);
   }, [events]);
 
-  // Reset image error and loading state when current image changes
+  // Reset error + loading state when switching between slides
   React.useEffect(() => {
     setImageError(null);
     setImageLoading(true);
     setUseDirectUrl(false);
   }, [currentIndex, eventsWithImages]);
 
-  // Preload all images when carousel loads
+  // Preload all event images once when carousel mounts
   React.useEffect(() => {
-    // Only run in browser environment
     if (typeof window === 'undefined' || eventsWithImages.length === 0) return;
 
     const imagePromises = eventsWithImages.map((event, index) => {
       return new Promise((resolve, reject) => {
         const img = new window.Image();
-        img.onload = resolve;
-        img.onerror = reject;
+        img.onload = resolve; // Success
+        img.onerror = reject; // Failure
         img.src = `/api/image-proxy?url=${encodeURIComponent(event.imgLink!)}&i=${index}`;
       });
     });
 
-    // We don't need to wait for all images to load, but we can catch any errors
+    // Catch preloading errors (optional: log them)
     Promise.allSettled(imagePromises).then(results => {
-      const failedLoads = results.filter(result => result.status === 'rejected').length;
+      const failedLoads = results.filter(r => r.status === 'rejected').length;
       if (failedLoads > 0) {
         console.warn(`${failedLoads} images failed to preload in carousel`);
       }
@@ -70,29 +75,33 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
       );
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(interval); // Cleanup
   }, [eventsWithImages.length]);
 
+  // Navigate to previous slide
   const goToPrevious = () => {
     setCurrentIndex(prevIndex => 
       prevIndex === 0 ? eventsWithImages.length - 1 : prevIndex - 1
     );
   };
 
+  // Navigate to next slide
   const goToNext = () => {
     setCurrentIndex(prevIndex => 
       prevIndex === eventsWithImages.length - 1 ? 0 : prevIndex + 1
     );
   };
 
+  // Jump to a specific slide
   const goToSlide = (index: number) => {
     setCurrentIndex(index);
   };
 
+  // Show placeholder if there are no images at all
   if (eventsWithImages.length === 0) {
     return (
-      <Card className="bg-gradient-to-br from-card via-card/95 to-amber-500/5 border border-amber-500/20 shadow-lg hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-300 hover:scale-105 group dark:bg-card dark:border-amber-500/50 dark:hover:shadow-amber-500/30 dark:hover:border-amber-500/60 mx-auto w-full h-full flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-3 flex-shrink-0">
+      <Card className="...styles">
+        <CardHeader className="...styles">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <ImageIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             Event Photos
@@ -114,12 +123,12 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
   }
 
   const currentEvent = eventsWithImages[currentIndex];
-  
-  // Check if currentEvent is valid
+
+  // Safety check: in case currentEvent is invalid (edge case)
   if (!currentEvent) {
     return (
-      <Card className="bg-gradient-to-br from-card via-card/95 to-amber-500/5 border border-amber-500/20 shadow-lg hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-300 hover:scale-105 group dark:bg-card dark:border-amber-500/50 dark:hover:shadow-amber-500/30 dark:hover:border-amber-500/60 mx-auto w-full h-full flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-3 flex-shrink-0">
+      <Card className="...styles">
+        <CardHeader className="...styles">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <ImageIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             Event Photos
@@ -138,7 +147,8 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-card via-card/95 to-amber-500/5 border border-amber-500/20 shadow-lg hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-300 hover:scale-105 group dark:bg-card dark:border-amber-500/50 dark:hover:shadow-amber-500/30 dark:hover:border-amber-500/60 mx-auto w-full h-full flex flex-col">
+    <Card className="...styles">
+      {/* Header with title + counter */}
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-3 flex-shrink-0">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold truncate">
           <ImageIcon className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
@@ -148,10 +158,13 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
           {currentIndex + 1} of {eventsWithImages.length}
         </span>
       </CardHeader>
+
       <CardContent className="p-3 flex-grow flex flex-col">
+        {/* Image container */}
         <div className="relative aspect-video w-full min-h-[250px] overflow-hidden rounded-lg bg-muted/20 flex-grow">
           {currentEvent && currentEvent.imgLink ? (
             <>
+              {/* Show error if image fails */}
               {imageError ? (
                 <div className="flex flex-col items-center justify-center h-full w-full bg-muted/20 rounded-lg">
                   <ImageIcon className="h-10 w-10 text-destructive/50 mb-3" />
@@ -162,6 +175,7 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
                 </div>
               ) : (
                 <>
+                  {/* Show loading skeleton while fetching */}
                   {imageLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-muted/20 rounded-lg">
                       <div className="animate-pulse flex flex-col items-center">
@@ -170,6 +184,7 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
                       </div>
                     </div>
                   )}
+                  {/* Image element */}
                   <img
                     key={`${currentIndex}-${currentEvent.imgLink}`}
                     src={useDirectUrl
@@ -179,10 +194,10 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
                     className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
                     loading={currentIndex === 0 ? "eager" : "lazy"}
                     decoding="async"
-                    onLoad={() => setImageLoading(false)}
+                    onLoad={() => setImageLoading(false)} // Hide loader on success
                     onError={() => {
                       if (!useDirectUrl) {
-                        // Fallback to direct URL if proxy fails
+                        // Retry with direct URL if proxy fails
                         setUseDirectUrl(true);
                         return;
                       }
@@ -193,13 +208,14 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
               )}
             </>
           ) : (
+            // Placeholder if currentEvent has no image
             <div className="flex flex-col items-center justify-center h-full w-full bg-muted/20 rounded-lg">
               <ImageIcon className="h-10 w-10 text-muted-foreground/50 mb-3" />
               <p className="text-muted-foreground">No image available</p>
             </div>
           )}
           
-          {/* Navigation buttons */}
+          {/* Navigation arrows */}
           {eventsWithImages.length > 1 && (
             <>
               <Button
@@ -222,9 +238,7 @@ export function ImageCarousel({ events }: ImageCarouselProps) {
           )}
         </div>
         
-        
-        
-        {/* Dot indicators */}
+        {/* Dot indicators for quick navigation */}
         {eventsWithImages.length > 1 && (
           <div className="flex justify-center mt-3 space-x-2 flex-shrink-0">
             {eventsWithImages.map((_, index) => (

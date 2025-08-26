@@ -7,7 +7,13 @@ import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
+/**
+ * `filterPillVariants` defines the different style variations for the `FilterPill` component
+ * Each variant corresponds to a type of visual emphasis (default, secondary, destructive, etc.).
+ * This allows us to reuse the same `FilterPill` component with multiple looks without duplicating CSS.
+ */
 const filterPillVariants = cva(
+  // Base styling for all pills (shared classes)
   "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow-sm backdrop-blur-sm hover:scale-110 hover:shadow-lg",
   {
     variants: {
@@ -30,12 +36,19 @@ const filterPillVariants = cva(
           "border-white/30 bg-background/40 text-foreground hover:bg-background/60 hover:shadow-white/20 dark:border-white/20 dark:bg-background/30 dark:hover:bg-background/50 dark:hover:shadow-white/10",
       },
     },
+    // Default style variant (when no `variant` prop is passed)
     defaultVariants: {
       variant: "default",
     },
   }
 )
 
+/**
+ * - `variant`: controls the visual style (matches keys in `filterPillVariants`)
+ * - `onRemove`: callback function triggered when the "remove" (X) button is clicked
+ * - `removable`: whether the pill should render a remove button (default = true)
+ * - Inherits any additional `div` HTML attributes (like `onClick`, `className`, etc.)
+ */
 export interface FilterPillProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof filterPillVariants> {
@@ -43,6 +56,8 @@ export interface FilterPillProps
   removable?: boolean
 }
 
+
+// `FilterPill` is a reusable UI component that represents a selected filter or tag.
 const FilterPill = React.forwardRef<HTMLDivElement, FilterPillProps>(
   ({ className, variant, children, onRemove, removable = true, ...props }, ref) => {
     return (
@@ -51,15 +66,18 @@ const FilterPill = React.forwardRef<HTMLDivElement, FilterPillProps>(
         className={cn(filterPillVariants({ variant }), className)}
         {...props}
       >
+        {/* Truncate long labels so they don't overflow */}
         <span className="max-w-[120px] truncate">{children}</span>
+
+        {/* Optional remove button (only shows if `removable` is true) */}
         {removable && (
           <Button
             variant="ghost"
             size="icon"
             className="ml-1 h-4 w-4 rounded-full p-0 hover:bg-muted-foreground/10"
             onClick={(e) => {
-              e.stopPropagation()
-              onRemove?.()
+              e.stopPropagation() // prevent parent click handlers from firing
+              onRemove?.()        // call provided callback if defined
             }}
           >
             <X className="h-3 w-3" />

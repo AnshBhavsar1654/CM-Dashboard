@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Eye, EyeOff } from "lucide-react"
 import type { EventData } from "@/lib/types"
 
+// The returned component is a custom PieChart wrapper with tooltip, legend, animation, and segment click support.
 const RechartsPie = dynamic(async () => {
   const m = await import("recharts")
   return {
@@ -26,6 +26,7 @@ const RechartsPie = dynamic(async () => {
     }) => (
       <m.ResponsiveContainer width="100%" height="100%">
         <m.PieChart>
+          {/* Custom Tooltip inside Pie Chart */}
           {(() => {
             const TooltipContent = ({ active, payload }: any) => {
               if (active && payload && payload.length) {
@@ -41,6 +42,8 @@ const RechartsPie = dynamic(async () => {
             };
             return <m.Tooltip content={<TooltipContent />} />;
           })()}
+
+          {/* Show legend at the top if enabled */}
           {showLegend && (
             <m.Legend 
               layout="horizontal" 
@@ -49,20 +52,23 @@ const RechartsPie = dynamic(async () => {
               wrapperStyle={{ fontSize: '12px', paddingBottom: '20px' }}
             />
           )}
+
+          {/* Pie configuration */}
           <m.Pie 
               data={data} 
-              cx="50%" 
-              cy="55%" 
+              cx="50%" cy="55%" 
               labelLine={false} 
               outerRadius="60%" 
               innerRadius="30%"
               dataKey="value" 
               nameKey="name" 
+              // Show percentage on pie segments
               label={({ percent }: any) => `${(percent * 100).toFixed(0)}%`}
               onClick={onSegmentClick}
               animationDuration={animationDuration}
               animationBegin={0}
             >
+            {/* Color each slice, allow click interaction */}
             {data.map((entry: any, index: number) => (
               <m.Cell 
                 key={`cell-${index}`} 
@@ -82,6 +88,7 @@ const RechartsPie = dynamic(async () => {
   }
 }, { ssr: false })
 
+// Colors for pie chart segments (mapped to CSS variables for theme consistency)
 const COLORS = [
   "hsl(var(--chart-1))",
   "hsl(var(--chart-2))",
@@ -92,15 +99,19 @@ const COLORS = [
   "hsl(var(--chart-7))"
 ];
 
-
 export function EventTypeChart({ data }: { data: EventData[] }) {
+  // State to manage drill-down (null = event type view, object = district view)
   const [drillDownData, setDrillDownData] = React.useState<{ type: string; events: EventData[] } | null>(null);
+
+  // Toggle whether to show legend
   const [showLegend, setShowLegend] = React.useState(true);
+
+  // Reference for chart container (optional if you want DOM access)
   const chartRef = React.useRef<HTMLDivElement>(null);
 
   const chartData = React.useMemo(() => {
     if (drillDownData) {
-      // Show district breakdown for selected event type
+      // Case 1: Drill down into district breakdown for a selected event type
       const districtCounts = drillDownData.events.reduce((acc, event) => {
         acc[event.district] = (acc[event.district] || 0) + 1;
         return acc;
@@ -109,7 +120,7 @@ export function EventTypeChart({ data }: { data: EventData[] }) {
       return Object.entries(districtCounts).map(([name, value]) => ({ name, value }));
     }
 
-    // Show event type breakdown
+    // Case 2: Default view = event type distribution
     const typeCounts = data.reduce((acc, event) => {
       acc[event.type] = (acc[event.type] || 0) + 1;
       return acc;
@@ -118,18 +129,20 @@ export function EventTypeChart({ data }: { data: EventData[] }) {
     return Object.entries(typeCounts).map(([name, value]) => ({ name, value }));
   }, [data, drillDownData]);
 
+  // When a pie segment is clicked: drill down into districts for that type
   const handleSegmentClick = React.useCallback((segmentData: any) => {
     if (!drillDownData) {
-      // Drill down to district view for this event type
       const eventsOfType = data.filter(event => event.type === segmentData.name);
       setDrillDownData({ type: segmentData.name, events: eventsOfType });
     }
   }, [data, drillDownData]);
 
+  // Go back from drill-down view to event type view
   const handleBackClick = React.useCallback(() => {
     setDrillDownData(null);
   }, []);
 
+  // Empty State (no data)
   if (chartData.length === 0) {
     return (
       <Card className="bg-transparent h-full flex flex-col justify-center items-center min-h-[458px]">
@@ -144,10 +157,12 @@ export function EventTypeChart({ data }: { data: EventData[] }) {
     );
   }
 
+  // Main Chart Rendering
   return (
     <Card className="bg-gradient-to-br from-card/50 via-card/30 to-primary/5 border border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
       <CardHeader>
         <div className="flex items-center justify-between">
+          {/* Title + description changes depending on drillDown state */}
           <div>
             <CardTitle className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
               {drillDownData ? `${drillDownData.type} Events by District` : 'Event Types Distribution'}
@@ -159,6 +174,8 @@ export function EventTypeChart({ data }: { data: EventData[] }) {
               }
             </CardDescription>
           </div>
+
+          {/* Controls: Back button (only in drillDown mode) + Toggle Legend */}
           <div className="flex items-center gap-2">
             {drillDownData && (
               <Button
@@ -183,12 +200,14 @@ export function EventTypeChart({ data }: { data: EventData[] }) {
           </div>
         </div>
       </CardHeader>
+
+      {/* Chart Area */}
       <CardContent className="flex-1 flex items-center justify-center border border-border/30 rounded-lg bg-gradient-to-br from-background/20 to-background/10 backdrop-blur-sm">
         <div ref={chartRef} style={{ width: '100%', height: 650 }}>
           <RechartsPie 
             data={chartData} 
             colors={COLORS} 
-            onSegmentClick={drillDownData ? undefined : handleSegmentClick}
+            onSegmentClick={drillDownData ? undefined : handleSegmentClick} // Disable click if already drilled down
             showLegend={showLegend}
             animationDuration={800}
           />

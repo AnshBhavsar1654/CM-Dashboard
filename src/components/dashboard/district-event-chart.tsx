@@ -1,3 +1,4 @@
+//  Renders a stacked bar chart (by district) summarizing counts of events by category.
 
 "use client"
 
@@ -8,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Eye, EyeOff } from "lucide-react"
 import type { EventData } from "@/lib/types"
 
+// Dynamically import Recharts to ensure it's only used on the client.
+// Recharts relies on browser APIs, so SSR is disabled for this component.
 const RechartsBar = dynamic(async () => {
   const m = await import("recharts");
   const { 
@@ -21,8 +24,15 @@ const RechartsBar = dynamic(async () => {
     Cell
   } = m;
   return {
+    /**
+     * Client-only Recharts bar chart.
+     * onBarClick: Invoked with the bar datum (district) when a bar is clicked
+     * showGrid: Toggles CartesianGrid visibility
+     * animationDuration: Milliseconds for bar entrance animation
+     * selectedDistrict: Name of the currently highlighted district
+     */
     default: ({ 
-      data, 
+      data,
       onBarClick, 
       showGrid = true,
       animationDuration = 1000,
@@ -60,6 +70,7 @@ const RechartsBar = dynamic(async () => {
           <YAxis tick={{ fill: 'hsl(var(--foreground))' }} />
           {(() => {
             const TooltipContent = ({ active, payload, label }: any) => {
+              // Custom tooltip showing total events and per-type breakdown for a district
               if (active && payload && payload.length) {
                 const row = payload[0]?.payload || {};
                 return (
@@ -88,9 +99,16 @@ const RechartsBar = dynamic(async () => {
               }
               return null;
             };
-                         return <Tooltip content={<TooltipContent />} cursor={{ fill: 'hsl(var(--accent) / 0.1)' }} />;
+            // Keep the default translucent cursor highlight for hovered bars
+            return <Tooltip content={<TooltipContent />} cursor={{ fill: 'hsl(var(--accent) / 0.1)' }} />;
           })()}
-                               {/* Government Events Bar */}
+          {/*
+            Stacked bars by event categories.
+            - Each <Bar> shares the same stackId to accumulate totals per district.
+            - Cell uses filter to emphasize the currently selected district via SVG shadow.
+            - Opacity dims non-selected districts when a selection exists.
+          */}
+          {/* Government Events Bar */}
           <Bar
             dataKey="government"
             name="Government Events"
@@ -285,6 +303,7 @@ export function DistrictEventChart({
   onDistrictSelect?: (district: string | undefined) => void;
   selectedDistrict?: string;
 }) {
+  /** Toggle grid lines on the chart area */
   const [showGrid, setShowGrid] = React.useState(true);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
@@ -334,6 +353,10 @@ export function DistrictEventChart({
     return districtData.sort((a, b) => b.value - a.value); // Sort descending
   }, [data, selectedDistrict]);
 
+  /**
+   * Handle clicks on any stacked bar segment.
+   * If the clicked district is already selected, clear the filter; otherwise select it.
+   */
   const handleBarClick = React.useCallback((barData: any) => {
     if (onDistrictSelect) {
       // Toggle district selection: if already selected, clear it; otherwise select it

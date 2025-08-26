@@ -1,4 +1,4 @@
-
+// Stats cards shown at the top of the dashboard. Each card computes simple
 "use client";
 
 import { Users, Route, MapPin, Building2, Handshake, Megaphone, Layers, LucideIcon, CalendarDays, Ellipsis, TrendingUp, TrendingDown, Target } from "lucide-react";
@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { EventData } from "@/lib/types";
 
+
+// TotalDistanceCard displays total distance travelled and a monthly average with a trend indicator
 export function TotalDistanceCard({ value, events }: { value: number; events?: EventData[] }) {
   // Calculate monthly average and trend based on actual date range
   const calculateDistanceMetrics = () => {
@@ -18,7 +20,7 @@ export function TotalDistanceCard({ value, events }: { value: number; events?: E
       };
     }
     
-    // Get the date range from events
+    // Get the date range from events (min/max by eventDateMs)
     const dates = events.map(event => new Date(event.eventDateMs));
     const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
     const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
@@ -27,10 +29,10 @@ export function TotalDistanceCard({ value, events }: { value: number; events?: E
     const monthsDiff = (maxDate.getFullYear() - minDate.getFullYear()) * 12 + 
                       (maxDate.getMonth() - minDate.getMonth()) + 1;
     
-    // Overall average across all months - rounded up to whole number
+    // Overall average across all months (rounded up)
     const overallAvg = monthsDiff <= 1 ? value : Math.ceil(value / monthsDiff);
     
-    // Current month calculation (latest month)
+    // Current month calculation (or the latest month with events if current has none)
     const currentMonth = new Date();
     const currentMonthEvents = events.filter(event => {
       const eventDate = new Date(event.eventDateMs);
@@ -56,7 +58,7 @@ export function TotalDistanceCard({ value, events }: { value: number; events?: E
     // Round up current month distance to whole number
     currentMonthDistance = Math.ceil(currentMonthDistance);
     
-    // Determine trend: current month vs overall average
+    // Trend vs overall average for a quick up/down/stable marker
     const trend = currentMonthDistance > overallAvg ? 'up' : 
                   currentMonthDistance < overallAvg ? 'down' : 'stable';
     
@@ -103,6 +105,8 @@ export function TotalDistanceCard({ value, events }: { value: number; events?: E
   );
 }
 
+
+// Shows how many of 33 districts have been covered, a remaining count, and a progress bar.
 export function DistrictsCoveredCard({ value }: { value: number }) {
   const coveragePercent = Math.round((value / 33) * 100);
   const remaining = 33 - value;
@@ -136,6 +140,8 @@ export function DistrictsCoveredCard({ value }: { value: number }) {
   );
 }
 
+ 
+// Displays count of cultural & religious events with avg/month and a simple trend.
 export function CulturalReligiousEventsCard({ value, events }: { value: number; events?: EventData[] }) {
   // Calculate average events per month and trend
   const calculateTrend = () => {
@@ -210,6 +216,10 @@ export function CulturalReligiousEventsCard({ value, events }: { value: number; 
   );
 }
 
+
+
+// Displays total events with monthly average, days since last event, and a simple projection.
+
 export function TotalEventsCard({ value, events }: { value: number; events?: EventData[] }) {
   // Enhanced analytics for Total Events card
   const calculateEventMetrics = () => {
@@ -267,7 +277,7 @@ export function TotalEventsCard({ value, events }: { value: number; events?: Eve
                   thisMonthCount < lastMonthCount ? 'down' : 'stable';
     const trendPercent = Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100);
     
-    // Predictive analytics - projected monthly based on current pace
+    // Predictive analytics - naive projection of this month's total at current pace
     const daysIntoMonth = now.getDate();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const projectedMonthly = currentMonthEvents > 0 ? 
@@ -327,6 +337,8 @@ interface StatCardProps {
   eventTypeFilter?: string | string[]; // Accept either a single string or array of strings
 }
 
+// Generic small KPI card used for event type breakdowns (Govt/Public/Social/etc.).
+// Optionally filters the provided events by `eventTypeFilter` to compute avg/month and trend.
 export function StatCard({ title, value, Icon, events = [], eventTypeFilter }: StatCardProps) {
   const subtitles = {
     "Govt. Events": "events conducted",
