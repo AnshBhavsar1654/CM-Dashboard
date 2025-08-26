@@ -1,3 +1,5 @@
+// Custom Accordion component built on top of Radix UI
+
 "use client"
 
 import * as React from "react"

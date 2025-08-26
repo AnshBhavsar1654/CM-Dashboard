@@ -219,7 +219,6 @@ export function CulturalReligiousEventsCard({ value, events }: { value: number; 
 
 
 // Displays total events with monthly average, days since last event, and a simple projection.
-
 export function TotalEventsCard({ value, events }: { value: number; events?: EventData[] }) {
   // Enhanced analytics for Total Events card
   const calculateEventMetrics = () => {
@@ -277,7 +276,12 @@ export function TotalEventsCard({ value, events }: { value: number; events?: Eve
                   thisMonthCount < lastMonthCount ? 'down' : 'stable';
     const trendPercent = Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100);
     
-    // Predictive analytics - naive projection of this month's total at current pace
+    // - If events have already happened this month (currentMonthEvents > 0):
+    //    Calculate the average pace so far: currentMonthEvents / daysIntoMonth
+    //    Extrapolate that pace to the whole month: * daysInMonth
+    //    Round the result to nearest whole number
+    //    Predicts how many events will occur by month-end if the pace continues
+    // - If no events yet this month, fallback to the historical average (eventsPerMonth)
     const daysIntoMonth = now.getDate();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const projectedMonthly = currentMonthEvents > 0 ? 

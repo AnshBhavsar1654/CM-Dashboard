@@ -307,6 +307,7 @@ export function DistrictEventChart({
   const [showGrid, setShowGrid] = React.useState(true);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
+  // Returns sorted data (descending by total events) for the chart
   const chartData = React.useMemo(() => {
     // Always show all districts from the original data, not filtered data
     const allEvents = data; // This will be the original unfiltered data

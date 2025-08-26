@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request): Promise<Response> {
 	try {
 		const requestUrl = new URL(request.url);
+		// Validates it's a proper URL and enforces HTTPS
 		const targetUrlParam = requestUrl.searchParams.get('url');
 		
 		if (!targetUrlParam) {

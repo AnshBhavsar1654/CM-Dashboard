@@ -32,6 +32,9 @@ export function ClusterGroup({ data }: ClusterGroupProps) {
       maxClusterRadius={40}            // radius for grouping markers into clusters
       spiderfyOnMaxZoom={true}         // expand cluster markers when zoomed in
       disableClusteringAtZoom={12}     // stop clustering at zoom level 12
+      
+      // Gets number of markers in cluster (`count`)
+      // Assigns style class depending on cluster size (small, medium, large)
       iconCreateFunction={(cluster) => {
         // Get number of markers in the cluster
         const count = cluster.getChildCount();

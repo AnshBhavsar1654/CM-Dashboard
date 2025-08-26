@@ -21,7 +21,6 @@ export function DashboardHeader() {
   const [isRefreshing, setIsRefreshing] = React.useState(false); // Local state to track refresh progress
 
   /**
-   * handleRefresh 
    * Triggers a manual revalidation of dashboard data:
    * 1. Calls the server action `revalidateAndFetchEvents`
    * 2. Refreshes the Next.js router cache
