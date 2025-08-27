@@ -6,7 +6,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/common/theme-toggle";
-import { Handshake, RefreshCw } from "lucide-react";
+import { Handshake, RefreshCw, LogOut } from "lucide-react";
 import { revalidateAndFetchEvents } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,6 +19,7 @@ export function DashboardHeader() {
   const router = useRouter(); // Gives access to Next.js router for refreshing the page
   const { toast } = useToast(); // Hook to trigger toast notifications
   const [isRefreshing, setIsRefreshing] = React.useState(false); // Local state to track refresh progress
+  const [isSigningOut, setIsSigningOut] = React.useState(false);
 
   /**
    * Triggers a manual revalidation of dashboard data:
@@ -58,6 +59,18 @@ export function DashboardHeader() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+      await fetch('/api/logout', { method: 'POST' });
+      router.replace('/login');
+    } catch (e) {
+      console.error('Sign out failed', e);
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
+
   return (
     <header
       className="
@@ -85,7 +98,7 @@ export function DashboardHeader() {
         </h1>
       </div>
 
-      {/* Action Buttons (Theme toggle + Refresh) */}
+      {/* Action Buttons (Theme toggle + Refresh + Sign out) */}
       <div className="ml-auto flex items-center gap-3">
         <ThemeToggle />
 
@@ -99,6 +112,17 @@ export function DashboardHeader() {
           {/* Show spinning icon when refreshing */}
           <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           {isRefreshing ? 'Refreshing...' : 'Force Refresh'}
+        </Button>
+
+        <Button 
+          variant="destructive"
+          size="sm"
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          className="border-primary/20"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          {isSigningOut ? 'Signing out...' : 'Sign out'}
         </Button>
       </div>
     </header>

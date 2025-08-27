@@ -73,11 +73,11 @@ export function DistrictsNotCoveredCard({ notCoveredDistricts }: DistrictsNotCov
                         Full list of districts not covered yet.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="max-h-[50vh] overflow-y-auto mt-2 space-y-1">
+                    <div className="max-h-[50vh] overflow-y-auto mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {notCoveredDistricts.map((district, idx) => (
                         <div key={`${district}-${idx}`} className="flex items-center text-sm">
                           <MapPin className="h-4 w-4 mr-2 text-red-500 flex-shrink-0" />
-                          <span>{district}</span>
+                          <span className="truncate" title={district}>{district}</span>
                         </div>
                       ))}
                     </div>

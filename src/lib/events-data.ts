@@ -196,6 +196,20 @@ export async function revalidateEvents() {
 }
 
 /**
+ * Returns events filtered to the last N months based on a range key.
+ * rangeKey: '1m' | '3m' | '6m' | '1y'
+ */
+export async function getFilteredEventsData(rangeKey: '1m' | '3m' | '6m' | '1y'): Promise<EventData[]> {
+  const all = await getEventsData();
+  const months = rangeKey === '1m' ? 1 : rangeKey === '3m' ? 3 : rangeKey === '6m' ? 6 : 12;
+  const now = Date.now();
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  const cutoffMs = cutoff.getTime();
+  return all.filter(e => e.eventDateMs >= cutoffMs && e.eventDateMs <= now);
+}
+
+/**
  * Core function to read and transform Google Sheet rows into EventData objects.
  * 1) Build Google Sheets client with JWT auth.
  * 2) Resolve the exact title of the "Data" worksheet from spreadsheet metadata.

@@ -4,14 +4,21 @@
  * ensures the dashboard has all event data ready at render time
  */
 
-import { getEventsData } from "@/lib/events-data";
+import { getFilteredEventsData } from "@/lib/events-data";
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
 import { DashboardWrapper } from "@/components/dashboard/dashboard-wrapper";
 
 export default async function DashboardPage() {
-  console.log('Fetching initial events data for dashboard...');
-  const events = await getEventsData();
-  console.log(`Fetched ${events.length} events for initial dashboard render`);
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
+  }
+  const filter = session.filter;
+  console.log('Fetching initial events with filter:', filter);
+  const events = await getFilteredEventsData(filter);
+  console.log(`Fetched ${events.length} events for initial render with filter ${filter}`);
 
   return <DashboardWrapper initialEvents={events} />;
 }
