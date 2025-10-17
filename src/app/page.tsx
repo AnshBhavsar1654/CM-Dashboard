@@ -5,17 +5,11 @@
  */
 
 import { getFilteredEventsData } from "@/lib/events-data";
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
-
 import { DashboardWrapper } from "@/components/dashboard/dashboard-wrapper";
 
 export default async function DashboardPage() {
-  const session = await getSession();
-  if (!session) {
-    redirect('/login');
-  }
-  const filter = session.filter;
+  // Default filter - dashboard opens directly without authentication
+  const filter = '1y';
   console.log('Fetching initial events with filter:', filter);
   const events = await getFilteredEventsData(filter);
   console.log(`Fetched ${events.length} events for initial render with filter ${filter}`);
