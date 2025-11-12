@@ -192,6 +192,13 @@ export function DateRangePicker({
         >
           Last 120 days
         </Badge>
+        <Badge
+          variant="outline"
+          className="cursor-pointer border border-primary/70 bg-primary/80 backdrop-blur-sm hover:border-primary hover:bg-primary transition-all duration-200 text-xs px-4 py-2 hover:shadow-sm font-medium text-white hover:scale-105 hover:shadow-primary/30 hover:ring-1 hover:ring-primary/50"
+          onClick={() => setQuickRange(730)}
+        >
+          Last 2 years
+        </Badge>
       </div>
     </div>
   )

@@ -9,7 +9,7 @@ import { DashboardWrapper } from "@/components/dashboard/dashboard-wrapper";
 
 export default async function DashboardPage() {
   // Default filter - dashboard opens directly without authentication
-  const filter = '1y';
+  const filter = '2y';
   console.log('Fetching initial events with filter:', filter);
   const events = await getFilteredEventsData(filter);
   console.log(`Fetched ${events.length} events for initial render with filter ${filter}`);

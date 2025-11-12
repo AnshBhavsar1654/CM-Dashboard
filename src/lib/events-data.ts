@@ -197,11 +197,20 @@ export async function revalidateEvents() {
 
 /**
  * Returns events filtered to the last N months based on a range key.
- * rangeKey: '1m' | '3m' | '6m' | '1y'
+ * rangeKey: '1m' | '3m' | '6m' | '1y' | '2y'
  */
-export async function getFilteredEventsData(rangeKey: '1m' | '3m' | '6m' | '1y'): Promise<EventData[]> {
+export async function getFilteredEventsData(rangeKey: '1m' | '3m' | '6m' | '1y' | '2y'): Promise<EventData[]> {
   const all = await getEventsData();
-  const months = rangeKey === '1m' ? 1 : rangeKey === '3m' ? 3 : rangeKey === '6m' ? 6 : 12;
+  const months =
+    rangeKey === '1m'
+      ? 1
+      : rangeKey === '3m'
+      ? 3
+      : rangeKey === '6m'
+      ? 6
+      : rangeKey === '2y'
+      ? 24
+      : 12;
   const now = Date.now();
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - months);
