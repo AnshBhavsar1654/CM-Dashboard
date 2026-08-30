@@ -1,12 +1,10 @@
-// Root layout - title, description, global styles, map, theme, notifications
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { PT_Sans } from 'next/font/google'
+import { Nunito_Sans } from 'next/font/google'
 import { ThemeProvider } from '@/components/common/theme-provider';
 
-const ptSans = PT_Sans({ weight: ['400','700'], subsets: ['latin'], display: 'swap' });
+const nunitoSans = Nunito_Sans({ weight: ['400', '600', '700'], subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'Gujarat Outreach Insights',
@@ -26,7 +24,7 @@ export default function RootLayout({
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossOrigin=""/>
       </head>
-      <body className={`font-body antialiased ${ptSans.className}`}>
+      <body className={`font-body antialiased ${nunitoSans.className}`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="light"

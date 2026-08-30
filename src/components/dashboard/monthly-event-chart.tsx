@@ -9,57 +9,33 @@ import type { EventData } from "@/lib/types"
 const RechartsBar = dynamic(async () => {
   const m = await import("recharts");
   return {
-    // Wrapped Recharts chart component for monthly events
     default: ({ data }: { data: any[] }) => (
       <m.ResponsiveContainer width="100%" height={450}>
-        <m.ComposedChart 
-          data={data} 
-          margin={{ top: 20, right: 30, left: 20, bottom: 75 }}
-        >
-          {/* Grid lines */}
+        <m.ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 75 }}>
           <m.CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-
-          {/* X Axis - Months */}
           <m.XAxis
             dataKey="name"
-            angle={-45}               // Rotate labels for readability
+            angle={-45}
             textAnchor="end"
             height={50}
             interval={0}
-            tick={{ fontSize: 12, fill: 'hsl(var(--foreground))' }}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
           />
-
-          {/* Y Axis - Event counts */}
-          <m.YAxis
-            tick={{ fill: 'hsl(var(--foreground))' }}
-            allowDecimals={false}
-            domain={[0, 'dataMax + 10']} // Dynamic scale with padding
-          />
-
-          {/* Custom tooltip showing total + breakdown by type */}
+          <m.YAxis tick={{ fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} domain={[0, 'dataMax + 10']} />
           {(() => {
             const TooltipContent = ({ active, payload, label }: any) => {
               if (active && payload && payload.length) {
                 const row = payload[0]?.payload || {};
                 return (
-                  <div className="p-3 bg-gradient-to-br from-background/95 to-background/90 border border-border/50 rounded-lg shadow-xl min-w-[180px] backdrop-blur-sm">
-                    {/* Month title */}
-                    <p className="font-bold text-foreground text-lg mb-2">{label}</p>
-                    {/* Total count */}
-                    <p className="text-sm font-semibold text-primary">
-                      Total Events: <span className="font-bold">{row.value}</span>
-                    </p>
-                    {/* Breakdown by event type */}
+                  <div className="p-3 bg-background border rounded-lg shadow-md min-w-[180px]">
+                    <p className="font-semibold text-foreground mb-1">{label}</p>
+                    <p className="text-sm text-primary font-medium">Total: {row.value}</p>
                     {row.types && Object.keys(row.types).length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-border/50">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Breakdown by type:</p>
-                        <ul className="text-xs list-disc list-inside">
-                          {Object.entries(row.types).map(([t, c]: any) => (
-                            <li key={String(t)} className="text-foreground">
-                              <span className="font-medium">{String(t)}:</span> {String(c)}
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="mt-1.5 pt-1.5 border-t">
+                        <p className="text-xs text-muted-foreground mb-0.5">Breakdown:</p>
+                        {Object.entries(row.types).map(([t, c]: any) => (
+                          <p key={String(t)} className="text-xs">{String(t)}: {String(c)}</p>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -67,53 +43,18 @@ const RechartsBar = dynamic(async () => {
               }
               return null;
             };
-            return (
-              <m.Tooltip 
-                content={<TooltipContent />} 
-                cursor={{ fill: 'hsl(var(--primary) / 0.1)' }} 
-              />
-            );
+            return <m.Tooltip content={<TooltipContent />} cursor={{ fill: 'hsl(var(--primary) / 0.05)' }} />;
           })()}
-
-          {/* Bar layer - represents monthly totals */}
-          <m.Bar 
-            dataKey="value" 
-            name="Events" 
-            fill="hsl(var(--primary))" 
-            barSize={40}
-            radius={[4, 4, 0, 0]}   // Rounded top corners
-            animationDuration={1200}
-            style={{ cursor: 'default' }}
-          >
-            {/* Display value above each bar */}
-            <m.LabelList 
-              dataKey="value" 
-              position="top" 
-              offset={10} 
-              style={{ fill: 'hsl(var(--foreground))', fontSize: 12 }} 
-            />
+          <m.Bar dataKey="value" name="Events" fill="hsl(var(--primary))" barSize={40} radius={[4, 4, 0, 0]} animationDuration={1200} style={{ cursor: 'default' }}>
+            <m.LabelList dataKey="value" position="top" offset={10} style={{ fill: 'hsl(var(--foreground))', fontSize: 11 }} />
           </m.Bar>
-
-          {/* Line layer - trend line over months */}
           <m.Line
             type="monotone"
             dataKey="lineValue"
-            stroke="hsl(var(--accent))"
-            strokeWidth={3}
-            strokeDasharray="0"
-            dot={{ 
-              stroke: 'hsl(var(--accent))', 
-              strokeWidth: 3, 
-              r: 5, 
-              fill: 'hsl(var(--background))',
-              strokeDasharray: "0"
-            }}
-            activeDot={{ 
-              r: 8, 
-              fill: 'hsl(var(--accent))', 
-              stroke: 'hsl(var(--background))', 
-              strokeWidth: 3 
-            }}
+            stroke="hsl(var(--destructive))"
+            strokeWidth={2}
+            dot={{ stroke: 'hsl(var(--destructive))', strokeWidth: 2, r: 4, fill: 'hsl(var(--background))' }}
+            activeDot={{ r: 7, fill: 'hsl(var(--destructive))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
             isAnimationActive={true}
             animationDuration={1500}
             connectNulls={true}
@@ -124,33 +65,21 @@ const RechartsBar = dynamic(async () => {
   }
 }, { ssr: false })
 
-
-/**
- - Aggregates event data over the past 12 months.
- - Groups by month and event type.
- - Visualizes totals as a bar chart with a trend line overlay.
- */
 export function MonthlyEventChart({ data }: { data: EventData[] }) {
-  const chartRef = React.useRef<HTMLDivElement>(null);
-
-  // Prepare data for chart
   const chartData = React.useMemo(() => {
     const monthData: { [key: string]: { total: number; types: Record<string, number> } } = {};
     const monthLabels: string[] = [];
     const today = new Date();
 
-    // Step 1: Generate labels for last 12 months (reverse chronological)
     for (let i = 0; i < 12; i++) {
       const d = subMonths(today, i);
       const monthKey = format(d, "MMM yyyy");
       monthLabels.push(monthKey);
-      monthData[monthKey] = { total: 0, types: {} }; // init counters
+      monthData[monthKey] = { total: 0, types: {} };
     }
 
-    // Step 2: Start boundary for last 12 months
     const last12MonthsStart = startOfMonth(subMonths(today, 11));
 
-    // Step 3: Aggregate events by month + type
     data.forEach(event => {
       const eventDate = new Date(event.date);
       if (eventDate >= last12MonthsStart) {
@@ -162,37 +91,22 @@ export function MonthlyEventChart({ data }: { data: EventData[] }) {
         }
       }
     });
-    
-    // Step 4: Map results to chart format (chronological order)
+
     return monthLabels.reverse().map(label => ({
-      name: label,                  // Month label
-      value: monthData[label].total, // Bar chart value
-      lineValue: monthData[label].total, // Line chart value (same as total)
-      types: monthData[label].types  // Breakdown for tooltip
+      name: label,
+      value: monthData[label].total,
+      lineValue: monthData[label].total,
+      types: monthData[label].types
     }));
   }, [data]);
 
-  const cardTitle = 'Monthly Event Trend';
-  const cardDescription = 'Number of events held per month over the last 12 months with trend line, based on current filters.';
-
   return (
-    <Card className="bg-gradient-to-br from-card/50 via-card/30 to-secondary/5 border border-secondary/20 shadow-lg hover:shadow-xl transition-all duration-300">
+    <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              {cardTitle}
-            </CardTitle>
-            <CardDescription>{cardDescription}</CardDescription>
-          </div>
-        </div>
+        <CardTitle>Monthly Event Trend</CardTitle>
+        <CardDescription>Events per month over the last 12 months with trend line.</CardDescription>
       </CardHeader>
-
-      {/* Chart wrapper */}
-      <CardContent 
-        ref={chartRef} 
-        className="border border-border/30 rounded-lg bg-gradient-to-br from-background/20 to-background/10 backdrop-blur-sm p-2"
-      >
+      <CardContent>
         <RechartsBar data={chartData} />
       </CardContent>
     </Card>
