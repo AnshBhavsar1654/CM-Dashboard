@@ -4,6 +4,7 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react"
+import Image from "next/image"
 import { formatDisplayDate } from "@/lib/date"
 import type { EventData } from "@/lib/types"
 
@@ -71,12 +72,14 @@ export function PhotoCarousel({ events }: PhotoCarouselProps) {
                   </div>
                 </div>
               )}
-              <img
+              <Image
                 key={`${idx}-${event.imgLink}`}
                 src={src}
                 alt={event.eventName}
-                className="absolute inset-0 w-full h-full object-cover"
+                fill
+                className="object-cover"
                 loading="lazy"
+                loader={({ src }) => src}
                 onLoad={() => setLoading(false)}
                 onError={() => { if (!useDirect) setUseDirect(true); else setImgError(true) }}
               />

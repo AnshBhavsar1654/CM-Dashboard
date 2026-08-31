@@ -17,7 +17,7 @@ interface HeadlineStatProps {
   accent?: string
 }
 
-export function HeadlineStat({ title, value, subtitle, icon: Icon, allEvents, filteredEvents, filterFn, accent }: HeadlineStatProps) {
+export function HeadlineStat({ title, value, subtitle, icon: Icon, allEvents, filteredEvents: _filteredEvents, filterFn, accent: _accent }: HeadlineStatProps) {
   return (
     <Card className="relative h-full">
       <CardContent className="p-5">
