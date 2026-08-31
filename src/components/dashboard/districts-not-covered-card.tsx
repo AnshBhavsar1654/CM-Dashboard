@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DistrictsNotCoveredCardProps {
@@ -22,12 +22,14 @@ export function DistrictsNotCoveredCard({ notCoveredDistricts }: DistrictsNotCov
             <div className="text-3xl font-bold tracking-tight text-destructive">
               {notCoveredDistricts.length}
             </div>
-            <div className="mt-2 space-y-1 flex-grow overflow-y-auto">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {notCoveredDistricts.map((district, index) => (
-                <div key={index} className="flex items-center text-sm text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
-                  <span className="truncate">{district}</span>
-                </div>
+                <span
+                  key={index}
+                  className="inline-flex items-center rounded-md bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+                >
+                  {district}
+                </span>
               ))}
             </div>
           </>

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSidebar } from "@/components/sidebar-provider"
+import { SidebarStats } from "@/components/sidebar-stats"
 import {
   LayoutDashboard,
   Map,
@@ -11,6 +12,8 @@ import {
   TrendingUp,
   Table2,
   Handshake,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react"
 
 const navItems = [
@@ -23,25 +26,51 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { collapsed } = useSidebar()
+  const { collapsed, toggle } = useSidebar()
 
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-card transition-all duration-300",
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border bg-sidebar",
+        "transition-[width] duration-300 ease-in-out",
         collapsed ? "w-16" : "w-60"
       )}
     >
-      <div className={cn("flex h-14 items-center gap-2.5 border-b", collapsed ? "justify-center px-2" : "px-5")}>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
-          <Handshake className="h-4 w-4 text-primary-foreground" />
+      {/* ── Logo + Toggle ── */}
+      <div className={cn(
+        "flex h-14 shrink-0 items-center border-b border-sidebar-border",
+        collapsed ? "justify-center px-2" : "justify-between px-4"
+      )}>
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
+            <Handshake className="h-4 w-4 text-sidebar-primary-foreground" />
+          </div>
+          {!collapsed && (
+            <span className="text-sm font-semibold text-sidebar-foreground whitespace-nowrap">
+              CM Outreach
+            </span>
+          )}
         </div>
         {!collapsed && (
-          <span className="text-sm font-semibold tracking-tight whitespace-nowrap">CM Outreach</span>
+          <button
+            onClick={toggle}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+            aria-label="Collapse sidebar"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+      {/* ── Context Stats ── */}
+      {!collapsed && (
+        <div className="border-b border-sidebar-border px-4 py-3">
+          <SidebarStats />
+        </div>
+      )}
+
+      {/* ── Navigation ── */}
+      <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           return (
@@ -49,26 +78,65 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex items-center rounded-lg text-sm font-medium transition-colors",
-                collapsed ? "justify-center h-10" : "gap-3 px-3 py-2",
+                "group relative flex items-center rounded-md text-sm font-medium outline-none",
+                "transition-colors duration-150",
+                collapsed ? "justify-center h-10" : "gap-3 px-3 py-2.5",
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-sidebar-accent text-sidebar-foreground"
+                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
               )}
             >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {/* Left accent bar */}
+              {isActive && (
+                <span
+                  className={cn(
+                    "absolute left-0 top-1/2 -translate-y-1/2 rounded-r-full bg-sidebar-primary",
+                    "transition-all duration-300 ease-in-out",
+                    collapsed ? "h-5 w-[3px]" : "h-6 w-[3px]"
+                  )}
+                />
+              )}
+
+              <item.icon className={cn(
+                "h-4 w-4 shrink-0 transition-colors duration-150",
+                isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
+              )} />
+              {!collapsed && (
+                <span className="truncate">{item.label}</span>
+              )}
             </Link>
           )
         })}
       </nav>
 
-      {!collapsed && (
-        <div className="border-t p-4">
-          <p className="text-xs text-muted-foreground">Gujarat CM Outreach</p>
-        </div>
-      )}
+      {/* ── Footer ── */}
+      <div className="shrink-0 border-t border-sidebar-border">
+        {collapsed ? (
+          <div className="flex justify-center py-3">
+            <button
+              onClick={toggle}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+              aria-label="Expand sidebar"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="px-4 py-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent">
+                <span className="text-[10px] font-semibold text-sidebar-foreground/70">IN</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-sidebar-foreground truncate">Republic of India</p>
+                <p className="text-[10px] text-sidebar-foreground/50 truncate">Government of Gujarat</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   )
 }

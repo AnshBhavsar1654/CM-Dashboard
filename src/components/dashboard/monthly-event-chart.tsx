@@ -65,7 +65,7 @@ const RechartsBar = dynamic(async () => {
   }
 }, { ssr: false })
 
-export type DateRange = { from: Date | undefined; to: Date | undefined } | undefined;
+export type DateRange = { from?: Date; to?: Date } | undefined;
 
 export function MonthlyEventChart({
   data,

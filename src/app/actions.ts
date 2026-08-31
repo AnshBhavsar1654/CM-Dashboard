@@ -16,3 +16,23 @@ export async function revalidateAndFetchEvents() {
   console.log(`Fetched ${events.length} events`);
   return events.length
 }
+
+const TOTAL_DISTRICTS = 33
+
+export async function getSidebarStats() {
+  const events = await getEventsData()
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+  const thisMonth = events.filter(e => {
+    const d = new Date(e.date)
+    return d >= monthStart && d <= monthEnd
+  })
+
+  const eventsThisMonth = thisMonth.length
+  const districtsCovered = new Set(thisMonth.map(e => e.district).filter(Boolean)).size
+  const districtsRemaining = Math.max(0, TOTAL_DISTRICTS - districtsCovered)
+
+  return { eventsThisMonth, districtsCovered, districtsRemaining, totalDistricts: TOTAL_DISTRICTS }
+}

@@ -10,7 +10,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className={collapsed ? "pl-16" : "pl-60"} style={{ transition: "padding-left 300ms" }}>
+      <div
+        className="transition-[padding-left] duration-300 ease-in-out"
+        style={{ paddingLeft: collapsed ? '4rem' : '15rem' }}
+      >
         <DashboardHeader />
         <main className="p-4 md:p-6">
           {children}
