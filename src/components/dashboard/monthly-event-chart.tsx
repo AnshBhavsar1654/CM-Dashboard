@@ -5,6 +5,7 @@ import dynamic from "next/dynamic"
 import { format, startOfMonth, endOfMonth } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import type { EventData } from "@/lib/types"
+import type { DateRange } from "react-day-picker"
 
 const RechartsBar = dynamic(async () => {
   const m = await import("recharts");
@@ -64,8 +65,6 @@ const RechartsBar = dynamic(async () => {
     )
   }
 }, { ssr: false })
-
-export type DateRange = { from?: Date; to?: Date } | undefined;
 
 export function MonthlyEventChart({
   data,

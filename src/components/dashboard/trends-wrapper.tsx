@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { MonthlyEventChart, type DateRange } from "@/components/dashboard/monthly-event-chart"
+import { MonthlyEventChart } from "@/components/dashboard/monthly-event-chart"
 import { DateFilterPopover } from "@/components/dashboard/date-filter-popover"
+import type { DateRange } from "react-day-picker"
 import type { EventData } from "@/lib/types"
 
 export function TrendsWrapper({ events }: { events: EventData[] }) {

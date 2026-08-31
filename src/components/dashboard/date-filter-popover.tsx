@@ -17,8 +17,8 @@ const QUICK_RANGES = [
 ] as const;
 
 interface DateFilterPopoverProps {
-  dateRange: DateRange
-  onDateRangeChange: (range: DateRange) => void
+  dateRange: DateRange | undefined
+  onDateRangeChange: (range: DateRange | undefined) => void
   quickRanges?: { label: string; value: number | undefined }[]
 }
 
@@ -92,7 +92,7 @@ export function DateFilterPopover({
           <Calendar
             mode="range"
             selected={dateRange}
-            onSelect={(range) => onDateRangeChange(range ?? undefined)}
+            onSelect={(range) => onDateRangeChange(range as DateRange | undefined)}
             numberOfMonths={2}
           />
         </div>
