@@ -29,7 +29,7 @@ export function EventsTable({ data }: { data: EventData[] }) {
   const eventsPerPage = 10;
 
   const exportToCSV = () => {
-    const headers = ["Event Name", "Date", "Type", "District", "Tags", "Department", "Distance (km)"];
+    const headers = ["Event Name", "Date", "Type", "District", "Location", "Latitude", "Longitude", "Department", "Distance (km)"];
     const csvRows = [
       headers.join(","),
       ...data.map(event => [
@@ -37,7 +37,9 @@ export function EventsTable({ data }: { data: EventData[] }) {
         `"${new Date(event.date).toISOString().slice(0, 10)}"`,
         `"${event.type}"`,
         `"${event.district}"`,
-        `"${event.tags.join('; ').replace(/"/g, '""')}"`,
+        `"${event.location.replace(/"/g, '""')}"`,
+        event.latitude,
+        event.longitude,
         `"${event.department}"`,
         event.distanceTravelled.toFixed(2)
       ].join(","))
@@ -149,7 +151,7 @@ export function EventsTable({ data }: { data: EventData[] }) {
                 <SortableHeader sortKey="date" showDefaultIcon={false}>Date</SortableHeader>
                 <SortableHeader sortKey="district" isCentered>District</SortableHeader>
                 <SortableHeader sortKey="type" isCentered>Type</SortableHeader>
-                <TableHead className="text-center">Tags</TableHead>
+                <SortableHeader sortKey="location" isCentered>Location</SortableHeader>
                 <SortableHeader sortKey="department" isCentered>Department</SortableHeader>
               </TableRow>
             </TableHeader>
@@ -165,13 +167,7 @@ export function EventsTable({ data }: { data: EventData[] }) {
                     <TableCell className="text-center">
                       <Badge variant="default">{event.type}</Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1 justify-center">
-                        {event.tags.map(tag => (
-                          <Badge key={tag} variant="secondary">{tag}</Badge>
-                        ))}
-                      </div>
-                    </TableCell>
+                    <TableCell className="text-center text-muted-foreground">{event.location}</TableCell>
                     <TableCell className="text-center text-muted-foreground">{event.department}</TableCell>
                   </TableRow>
                 ))

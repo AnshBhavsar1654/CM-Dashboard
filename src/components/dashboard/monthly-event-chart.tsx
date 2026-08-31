@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import dynamic from "next/dynamic"
-import { format, subMonths, startOfMonth } from "date-fns"
+import { format, startOfMonth, endOfMonth } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import type { EventData } from "@/lib/types"
 
@@ -65,49 +65,77 @@ const RechartsBar = dynamic(async () => {
   }
 }, { ssr: false })
 
-export function MonthlyEventChart({ data }: { data: EventData[] }) {
+export type DateRange = { from: Date | undefined; to: Date | undefined } | undefined;
+
+export function MonthlyEventChart({
+  data,
+  dateRange,
+  description,
+}: {
+  data: EventData[];
+  dateRange?: DateRange;
+  description?: string;
+}) {
   const chartData = React.useMemo(() => {
     const monthData: { [key: string]: { total: number; types: Record<string, number> } } = {};
-    const monthLabels: string[] = [];
-    const today = new Date();
 
-    for (let i = 0; i < 12; i++) {
-      const d = subMonths(today, i);
-      const monthKey = format(d, "MMM yyyy");
-      monthLabels.push(monthKey);
-      monthData[monthKey] = { total: 0, types: {} };
-    }
-
-    const last12MonthsStart = startOfMonth(subMonths(today, 11));
-
-    data.forEach(event => {
+    const eventsInRange = data.filter(event => {
       const eventDate = new Date(event.date);
-      if (eventDate >= last12MonthsStart) {
-        const monthKey = format(eventDate, "MMM yyyy");
-        if (monthKey in monthData) {
-          monthData[monthKey].total++;
-          const eventType = event.type || 'Other';
-          monthData[monthKey].types[eventType] = (monthData[monthKey].types[eventType] || 0) + 1;
-        }
-      }
+      if (dateRange?.from && eventDate < startOfMonth(dateRange.from)) return false;
+      if (dateRange?.to && eventDate > endOfMonth(dateRange.to)) return false;
+      return true;
     });
 
-    return monthLabels.reverse().map(label => ({
+    eventsInRange.forEach(event => {
+      const eventDate = new Date(event.date);
+      const monthKey = format(eventDate, "MMM yyyy");
+      if (!monthData[monthKey]) {
+        monthData[monthKey] = { total: 0, types: {} };
+      }
+      monthData[monthKey].total++;
+      const eventType = event.type || 'Other';
+      monthData[monthKey].types[eventType] = (monthData[monthKey].types[eventType] || 0) + 1;
+    });
+
+    const sortedKeys = Object.keys(monthData).sort((a, b) => {
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    return sortedKeys.map(label => ({
       name: label,
       value: monthData[label].total,
       lineValue: monthData[label].total,
       types: monthData[label].types
     }));
-  }, [data]);
+  }, [data, dateRange]);
+
+  const monthCount = chartData.length;
+  const rangeLabel = dateRange?.from && dateRange?.to
+    ? `${format(dateRange.from, "MMM yyyy")} – ${format(dateRange.to, "MMM yyyy")}`
+    : dateRange?.from
+    ? `Since ${format(dateRange.from, "MMM yyyy")}`
+    : dateRange?.to
+    ? `Up to ${format(dateRange.to, "MMM yyyy")}`
+    : "All time";
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Monthly Event Trend</CardTitle>
-        <CardDescription>Events per month over the last 12 months with trend line.</CardDescription>
+        <CardDescription>
+          {description || `Events per month (${rangeLabel}, ${monthCount} months).`}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <RechartsBar data={chartData} />
+        {chartData.length > 0 ? (
+          <RechartsBar data={chartData} />
+        ) : (
+          <div className="flex h-[450px] items-center justify-center text-muted-foreground">
+            No events found for the selected period.
+          </div>
+        )}
       </CardContent>
     </Card>
   );
