@@ -1,5 +1,5 @@
 import { getFilteredEventsData } from "@/lib/events-data"
-import { MapView } from "@/components/dashboard/map-view"
+import { MapView } from "@/components/map/map-view"
 
 export default async function MapPage() {
   const events = await getFilteredEventsData("2y")

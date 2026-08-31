@@ -1,5 +1,5 @@
 import { getFilteredEventsData } from "@/lib/events-data"
-import { EventsTable } from "@/components/dashboard/events-table"
+import { EventsTable } from "@/components/events/events-table"
 
 export default async function EventsPage() {
   const events = await getFilteredEventsData("2y")

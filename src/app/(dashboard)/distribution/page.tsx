@@ -1,6 +1,6 @@
 import { getFilteredEventsData } from "@/lib/events-data"
-import { EventTypeChart } from "@/components/dashboard/event-type-chart"
-import { DistrictEventChart } from "@/components/dashboard/district-event-chart"
+import { EventTypeChart } from "@/components/distribution/event-type-chart"
+import { DistrictEventChart } from "@/components/distribution/district-event-chart"
 
 export default async function DistributionPage() {
   const events = await getFilteredEventsData("2y")

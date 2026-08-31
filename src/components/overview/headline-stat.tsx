@@ -3,7 +3,7 @@
 import * as React from "react"
 import type { LucideIcon } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { TrendSparkline } from "@/components/dashboard/trend-sparkline"
+import { TrendSparkline } from "@/components/overview/trend-sparkline"
 import type { EventData } from "@/lib/types"
 
 interface HeadlineStatProps {

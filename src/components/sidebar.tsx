@@ -12,8 +12,6 @@ import {
   TrendingUp,
   Table2,
   Handshake,
-  PanelLeftClose,
-  PanelLeft,
 } from "lucide-react"
 
 const navItems = [
@@ -26,7 +24,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { collapsed, toggle } = useSidebar()
+  const { collapsed } = useSidebar()
 
   return (
     <aside
@@ -36,7 +34,7 @@ export function Sidebar() {
         collapsed ? "w-16" : "w-60"
       )}
     >
-      {/* ── Logo + Toggle ── */}
+      {/* ── Logo ── */}
       <div className={cn(
         "flex h-14 shrink-0 items-center border-b border-sidebar-border",
         collapsed ? "justify-center px-2" : "justify-between px-4"
@@ -51,15 +49,6 @@ export function Sidebar() {
             </span>
           )}
         </div>
-        {!collapsed && (
-          <button
-            onClick={toggle}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
-            aria-label="Collapse sidebar"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
-        )}
       </div>
 
       {/* ── Context Stats ── */}
@@ -113,29 +102,19 @@ export function Sidebar() {
 
       {/* ── Footer ── */}
       <div className="shrink-0 border-t border-sidebar-border">
-        {collapsed ? (
-          <div className="flex justify-center py-3">
-            <button
-              onClick={toggle}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
-              aria-label="Expand sidebar"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="px-4 py-3.5">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent">
-                <span className="text-[10px] font-semibold text-sidebar-foreground/70">IN</span>
-              </div>
+        <div className="px-4 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent">
+              <span className="text-[10px] font-semibold text-sidebar-foreground/70">IN</span>
+            </div>
+            {!collapsed && (
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-sidebar-foreground truncate">Republic of India</p>
                 <p className="text-[10px] text-sidebar-foreground/50 truncate">Government of Gujarat</p>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </aside>
   )

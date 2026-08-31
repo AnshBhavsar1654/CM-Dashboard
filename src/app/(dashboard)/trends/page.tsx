@@ -1,5 +1,5 @@
 import { getEventsData } from "@/lib/events-data"
-import { TrendsWrapper } from "@/components/dashboard/trends-wrapper"
+import { TrendsWrapper } from "@/components/trends/trends-wrapper"
 
 export default async function TrendsPage() {
   const events = await getEventsData()
