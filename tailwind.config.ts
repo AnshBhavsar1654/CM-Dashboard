@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"Nunito Sans"', 'sans-serif'],
-        headline: ['"Nunito Sans"', 'sans-serif'],
+        body: ['"Inter"', 'sans-serif'],
+        headline: ['"Source Serif 4"', 'Georgia', 'serif'],
         code: ['monospace'],
       },
       colors: {
@@ -48,6 +48,17 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        palette: {
+          base: 'hsl(var(--palette-base))',
+          'surface-1': 'hsl(var(--palette-surface-1))',
+          'surface-2': 'hsl(var(--palette-surface-2))',
+          'surface-3': 'hsl(var(--palette-surface-3))',
+          primary: 'hsl(var(--palette-primary))',
+          'primary-muted': 'hsl(var(--palette-primary-muted))',
+          covered: 'hsl(var(--palette-covered))',
+          attention: 'hsl(var(--palette-attention))',
+          destructive: 'hsl(var(--palette-destructive))',
+        },
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -81,9 +92,11 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        sm: '4px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        full: '9999px',
       },
       keyframes: {
         'accordion-down': {

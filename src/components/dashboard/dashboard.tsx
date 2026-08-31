@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { DateRange } from "react-day-picker";
-import { addDays, subDays } from "date-fns";
+import { addDays } from "date-fns";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { EventData } from "@/lib/types";
@@ -54,10 +54,6 @@ export function Dashboard({ initialEvents }: { initialEvents: EventData[] }) {
         const toDate = to ? new Date(to) : undefined;
         setDate({ from: fromDate, to: toDate });
       } catch {}
-    } else {
-      const toDate = new Date();
-      const fromDate = subDays(toDate, 730);
-      setDate({ from: fromDate, to: toDate });
     }
   }, []);
 

@@ -1,10 +1,11 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { Nunito_Sans } from 'next/font/google'
+import { Inter, Source_Serif_4 } from 'next/font/google'
 import { ThemeProvider } from '@/components/common/theme-provider';
 
-const nunitoSans = Nunito_Sans({ weight: ['400', '600', '700'], subsets: ['latin'], display: 'swap' });
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
+const sourceSerif4 = Source_Serif_4({ subsets: ['latin'], display: 'swap', weight: ['400', '600', '700'] });
 
 export const metadata: Metadata = {
   title: 'Gujarat Outreach Insights',
@@ -24,7 +25,7 @@ export default function RootLayout({
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossOrigin=""/>
       </head>
-      <body className={`font-body antialiased ${nunitoSans.className}`}>
+      <body className={`font-body antialiased ${inter.className} ${sourceSerif4.className}`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="light"
