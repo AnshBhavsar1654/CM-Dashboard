@@ -13,7 +13,6 @@ const QUICK_RANGES = [
   { label: "3 months", value: 3 },
   { label: "6 months", value: 6 },
   { label: "1 year", value: 12 },
-  { label: "2 years", value: 24 },
 ] as const;
 
 interface DateFilterPopoverProps {
@@ -57,7 +56,7 @@ export function DateFilterPopover({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-[300px] p-0 overflow-hidden" align="end" sideOffset={4} collisionPadding={16}>
         <div className="p-3">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-sm font-medium text-foreground">Date range</span>
@@ -70,7 +69,7 @@ export function DateFilterPopover({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-1.5 mb-3">
+          <div className="grid grid-cols-2 gap-1 mb-3">
             {quickRanges.map((range) => (
               <Button
                 key={range.label}
@@ -83,18 +82,20 @@ export function DateFilterPopover({
                 }
                 size="sm"
                 onClick={() => quickSelect(range.value)}
-                className="justify-center text-xs"
+                className="justify-center text-xs h-8"
               >
                 {range.label}
               </Button>
             ))}
           </div>
-          <Calendar
-            mode="range"
-            selected={dateRange}
-            onSelect={(range) => onDateRangeChange(range as DateRange | undefined)}
-            numberOfMonths={2}
-          />
+          <div className="flex justify-center">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={(range) => onDateRangeChange(range as DateRange | undefined)}
+              numberOfMonths={1}
+            />
+          </div>
         </div>
         {hasFilter && (
           <div className="flex items-center justify-between border-t px-3 py-2">
