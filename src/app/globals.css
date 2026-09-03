@@ -54,6 +54,10 @@
     --chart-6: 38 75% 42%;
     --chart-7: 215 50% 40%;
 
+    /* ── Surface Elevation (skeletons, overlays) ── */
+    --surface-elevation-1: 30 10% 92%;
+    --surface-elevation-2: 30 14% 88%;
+
     /* ── Sidebar ── */
     --sidebar-background: 30 20% 97%;
     --sidebar-foreground: 222 25% 22%;
@@ -114,6 +118,10 @@
     --chart-5: 346 70% 55%;
     --chart-6: 38 90% 50%;
     --chart-7: 215 60% 50%;
+
+    /* ── Surface Elevation (skeletons, overlays) ── */
+    --surface-elevation-1: 215 20% 22%;
+    --surface-elevation-2: 215 14% 28%;
 
     /* ── Sidebar ── */
     --sidebar-background: 222 40% 10%;

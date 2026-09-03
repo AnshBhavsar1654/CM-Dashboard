@@ -90,6 +90,10 @@ export default {
           DEFAULT: 'hsl(var(--info))',
           foreground: 'hsl(var(--info-foreground))',
         },
+        'surface-elevation': {
+          1: 'hsl(var(--surface-elevation-1))',
+          2: 'hsl(var(--surface-elevation-2))',
+        },
       },
       borderRadius: {
         sm: '4px',
