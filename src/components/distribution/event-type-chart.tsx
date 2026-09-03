@@ -9,7 +9,6 @@ import type { EventData } from "@/lib/types"
 import {
   CHART_COLORS,
   eventTypeToCategory,
-  type ChartCategory,
 } from "./chart-colors"
 
 function DonutSkeleton() {
