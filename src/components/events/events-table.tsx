@@ -121,11 +121,12 @@ function FilterChip({
     <button
       onClick={onClick}
       className={`
-        inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors
+        inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium
+        transition-all duration-150
         ${
           active
-            ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15"
-            : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 scale-[1.02]"
+            : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-[1.02]"
         }
       `}
     >
@@ -476,9 +477,10 @@ export function EventsTable({ data }: { data: EventData[] }) {
                     <button
                       onClick={() => requestSort(key)}
                       className={`
-                        inline-flex items-center gap-1 h-8 px-2 -ml-2 rounded-md text-sm font-medium transition-colors
-                        hover:bg-muted
-                        ${sortConfig?.key === key ? "text-foreground" : "text-muted-foreground"}
+                        inline-flex items-center gap-1 h-8 px-2 -ml-2 rounded-md text-sm font-medium
+                        transition-all duration-150
+                        hover:bg-muted/80 hover:scale-[1.02]
+                        ${sortConfig?.key === key ? "text-foreground bg-muted/50" : "text-muted-foreground"}
                       `}
                     >
                       {label}
@@ -503,7 +505,7 @@ export function EventsTable({ data }: { data: EventData[] }) {
                   return (
                     <TableRow
                       key={event.id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      className="cursor-pointer hover:bg-muted/50 transition-all duration-150 hover:border-l-2 hover:border-l-primary"
                       onClick={() => openDrawer(event)}
                     >
                       <TableCell className="font-medium">{event.eventName}</TableCell>

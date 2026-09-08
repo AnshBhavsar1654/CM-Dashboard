@@ -43,28 +43,39 @@ export function OverviewWrapper({ events }: { events: EventData[] }) {
 
       {/* Top 3 headline stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <HeadlineStat
-          title="Total Events"
-          value={filteredEvents.length}
-          icon={Layers}
-          allEvents={events}
-          filteredEvents={filteredEvents}
-        />
-        <HeadlineStat
-          title="Distance Traveled"
-          value={`${Math.round(totalDistance).toLocaleString("en-IN")} km`}
-          subtitle="total"
-          icon={Route}
-          allEvents={events}
-          filteredEvents={filteredEvents}
-        />
-        <HeadlineStat
-          title="Districts Covered"
-          value={`${new Set(filteredEvents.filter(e => e.district && e.district !== "Out of State").map(e => e.district)).size}/33`}
-          icon={MapPin}
-          allEvents={events}
-          filteredEvents={filteredEvents}
-        />
+        {[0, 1, 2].map((i) => {
+          const stats = [
+            {
+              title: "Total Events",
+              value: filteredEvents.length,
+              icon: Layers,
+            },
+            {
+              title: "Distance Traveled",
+              value: `${Math.round(totalDistance).toLocaleString("en-IN")} km`,
+              subtitle: "total",
+              icon: Route,
+            },
+            {
+              title: "Districts Covered",
+              value: `${new Set(filteredEvents.filter(e => e.district && e.district !== "Out of State").map(e => e.district)).size}/33`,
+              icon: MapPin,
+            },
+          ]
+          const s = stats[i]
+          return (
+            <div key={s.title} className="animate-stagger-in" style={{ animationDelay: `${i * 80}ms` }}>
+              <HeadlineStat
+                title={s.title}
+                value={s.value}
+                subtitle={"subtitle" in s ? s.subtitle : undefined}
+                icon={s.icon}
+                allEvents={events}
+                filteredEvents={filteredEvents}
+              />
+            </div>
+          )
+        })}
       </div>
 
       {/* Stats by event type */}
@@ -72,15 +83,17 @@ export function OverviewWrapper({ events }: { events: EventData[] }) {
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
           By Event Type
         </h3>
-        <CategoryBreakdown events={filteredEvents} />
+        <div className="animate-stagger-in" style={{ animationDelay: "280ms" }}>
+          <CategoryBreakdown events={filteredEvents} />
+        </div>
       </div>
 
       {/* District coverage + event photos */}
       <div className="grid grid-cols-1 lg:grid-cols-9 gap-4">
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-5 animate-stagger-in" style={{ animationDelay: "360ms" }}>
           <DistrictCoverageRing events={filteredEvents} />
         </div>
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-4 animate-stagger-in" style={{ animationDelay: "400ms" }}>
           <PhotoCarousel events={events} />
         </div>
       </div>

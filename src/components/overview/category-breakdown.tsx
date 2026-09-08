@@ -3,6 +3,7 @@
 import type { EventData } from "@/lib/types"
 import { Building2, Handshake, CalendarDays, Megaphone, Ellipsis, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { useCountUp } from "@/lib/hooks/use-count-up"
 
 interface CategoryStat {
   label: string
@@ -38,6 +39,24 @@ function computeTrend(events: EventData[], filterFn: (e: EventData) => boolean) 
   return "neutral" as const
 }
 
+function CategoryCard({ cat, events }: { cat: CategoryStat; events: EventData[] }) {
+  const trend = computeTrend(events, cat.filterFn)
+  const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus
+  const trendColor = trend === "up" ? "text-palette-covered" : trend === "down" ? "text-palette-attention" : "text-muted-foreground"
+  const counted = useCountUp(cat.value, 700)
+
+  return (
+    <div className="rounded-lg border bg-card p-3 flex flex-col gap-1.5 transition-colors hover:bg-muted/50">
+      <div className="flex items-center justify-between">
+        <cat.icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <TrendIcon className={`h-3 w-3 ${trendColor}`} />
+      </div>
+      <span className="text-xl font-headline font-semibold text-foreground tabular-nums">{counted}</span>
+      <span className="text-[11px] text-muted-foreground">{cat.label}</span>
+    </div>
+  )
+}
+
 export function CategoryBreakdown({ events }: { events: EventData[] }) {
   const categories: CategoryStat[] = [
     { label: "Govt.", value: events.filter(e => e.type.toLowerCase() === "government event").length, icon: Building2, filterFn: e => e.type.toLowerCase() === "government event" },
@@ -50,21 +69,9 @@ export function CategoryBreakdown({ events }: { events: EventData[] }) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      {categories.map((cat) => {
-        const trend = computeTrend(events, cat.filterFn)
-        const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus
-        const trendColor = trend === "up" ? "text-palette-covered" : trend === "down" ? "text-palette-attention" : "text-muted-foreground"
-        return (
-          <div key={cat.label} className="rounded-lg border bg-card p-3 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <cat.icon className="h-3.5 w-3.5 text-muted-foreground" />
-              <TrendIcon className={`h-3 w-3 ${trendColor}`} />
-            </div>
-            <span className="text-xl font-headline font-semibold text-foreground tabular-nums">{cat.value}</span>
-            <span className="text-[11px] text-muted-foreground">{cat.label}</span>
-          </div>
-        )
-      })}
+      {categories.map((cat) => (
+        <CategoryCard key={cat.label} cat={cat} events={events} />
+      ))}
     </div>
   )
 }

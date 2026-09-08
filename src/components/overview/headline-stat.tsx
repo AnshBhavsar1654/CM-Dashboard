@@ -4,6 +4,7 @@ import * as React from "react"
 import type { LucideIcon } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { TrendSparkline } from "@/components/overview/trend-sparkline"
+import { useCountUp } from "@/lib/hooks/use-count-up"
 import type { EventData } from "@/lib/types"
 
 interface HeadlineStatProps {
@@ -18,8 +19,12 @@ interface HeadlineStatProps {
 }
 
 export function HeadlineStat({ title, value, subtitle, icon: Icon, allEvents, filteredEvents: _filteredEvents, filterFn, accent: _accent }: HeadlineStatProps) {
+  const numericValue = typeof value === "number" ? value : null
+  const counted = useCountUp(numericValue ?? 0, 800)
+  const displayValue = numericValue !== null ? counted.toLocaleString("en-IN", { maximumFractionDigits: 0 }) : value
+
   return (
-    <Card className="relative h-full">
+    <Card className="relative h-full transition-shadow hover:shadow-md">
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -34,7 +39,7 @@ export function HeadlineStat({ title, value, subtitle, icon: Icon, allEvents, fi
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-headline font-semibold text-foreground tabular-nums">
-            {typeof value === "number" ? value.toLocaleString("en-IN", { maximumFractionDigits: 0 }) : value}
+            {displayValue}
           </span>
           {subtitle && (
             <span className="text-sm text-muted-foreground">{subtitle}</span>

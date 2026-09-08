@@ -329,7 +329,7 @@ export function EventTypeChart({
           <div
             className="absolute inset-0 flex items-center justify-center pt-8 pointer-events-none select-none"
           >
-            <div className="text-center">
+            <div className="text-center transition-transform duration-200 ease-out" style={{ transform: hoveredSlice ? "scale(1.05)" : "scale(1)" }}>
               {hoveredSlice ? (
                 <>
                   <p className="text-2xl font-bold text-foreground tabular-nums">
