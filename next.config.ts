@@ -3,6 +3,10 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: false,
+  // The xlsx is read at runtime via fs, so make sure it ships with the serverless bundle
+  outputFileTracingIncludes: {
+    '/**': ['./data/**'],
+  },
   typescript: {
     ignoreBuildErrors: false,
   },

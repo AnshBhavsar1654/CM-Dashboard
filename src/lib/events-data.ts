@@ -1,28 +1,16 @@
 // Server-only data access. Intentionally NOT a 'use server' module: that would
 // expose every export below as a publicly callable server action endpoint.
 
-import { google } from 'googleapis';
+import path from 'path';
+import ExcelJS from 'exceljs';
 import type { EventData } from "./types";
-import 'dotenv/config';
 import { getHomeCoordinates } from './admin-config';
-import { unstable_cache as cache, revalidateTag } from 'next/cache';
 import { normalizeDistrict } from './districts';
+import { unstable_cache as cache, revalidateTag } from 'next/cache';
 
-// Create a Google JWT auth client for the service account using readonly Sheets scope.
-function getJwt() {
-  const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
-  const privateKeyRaw = process.env.GOOGLE_SHEETS_PRIVATE_KEY;
-  const privateKey = privateKeyRaw?.replace(/\\n/g, '\n');
-
-  if (!clientEmail || !privateKey) {
-    throw new Error('Missing GOOGLE_SHEETS_CLIENT_EMAIL or GOOGLE_SHEETS_PRIVATE_KEY in your environment variables.');
-  }
-  return new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-  });
-}
+// Single source of truth for dashboard data (committed to the repo).
+const DATA_FILE = path.join(process.cwd(), 'data', 'cm_visits.xlsx');
+const DATA_SHEET = 'Data';
 
 /**
  * Parse various date formats into a Date.
@@ -97,101 +85,21 @@ function deg2rad(deg: number) {
 
 
 export const getCachedEventsData = cache(
-  async (): Promise<EventData[]> => {
-    console.log('Fetching fresh data from Google Sheets...');
-    // IMPORTANT: Do not return fallback data from inside the cached function,
-    // otherwise it will be cached and appear stale for hours.
-    const data = await readSheet();
-    return data;
-  },
+  async (): Promise<EventData[]> => readSheet(),
   ['events-data'],
-  { revalidate: 21600, tags: ['events-data'] } // 6 Hrs = 6*60*60 
+  { revalidate: 21600, tags: ['events-data'] } // 6 Hrs = 6*60*60
 );
 
 /**
  * Public accessor for events data.
- * - Returns cached data when Google Sheets is reachable.
- * - In development only, returns local test data if Google access fails.
- * - In production, errors are surfaced to avoid caching failures silently.
+ * Development reads the file on every call so edits show up immediately;
+ * production uses the cached copy.
  */
 export async function getEventsData(): Promise<EventData[]> {
-    try {
-        // In development, bypass cache to pick up latest sheet changes instantly.
-        if (process.env.NODE_ENV !== 'production') {
-            return await readSheet();
-        }
-        return await getCachedEventsData();
-    } catch (error) {
-        // If reading the sheet fails, log details and return dev-only fallback.
-        console.error('getEventsData() failed to load from Google Sheets:', error);
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('Returning local test events (not cached).');
-            const testEvents: EventData[] = [
-              {
-                id: 1,
-                eventName: 'Test Event with Image 1',
-                date: '2024-01-15',
-                eventDateMs: new Date('2024-01-15').getTime(),
-                district: 'Test District A',
-                location: 'Test Location A',
-                type: 'public event',
-                latitude: 17.3850,
-                longitude: 78.4867,
-                tags: ['test', 'public'],
-                distanceTravelled: 0,
-                department: 'Test Department',
-                imgLink: 'https://placehold.co/640x360/4f46e5/white?text=Test+Event+1',
-              },
-              {
-                id: 2,
-                eventName: 'Test Event with Image 2',
-                date: '2024-01-16',
-                eventDateMs: new Date('2024-01-16').getTime(),
-                district: 'Test District B',
-                location: 'Test Location B',
-                type: 'government event',
-                latitude: 17.4000,
-                longitude: 78.5000,
-                tags: ['test', 'government'],
-                distanceTravelled: 10,
-                department: 'Test Department 2',
-                imgLink: 'https://placehold.co/640x360/e11d48/white?text=Test+Event+2',
-              },
-              {
-                id: 3,
-                eventName: 'Test Event with Image 3',
-                date: '2024-01-17',
-                eventDateMs: new Date('2024-01-17').getTime(),
-                district: 'Test District C',
-                location: 'Test Location C',
-                type: 'social event',
-                latitude: 17.4200,
-                longitude: 78.4500,
-                tags: ['test', 'social'],
-                distanceTravelled: 5,
-                department: 'Test Department 3',
-                imgLink: 'https://placehold.co/640x360/10b981/white?text=Test+Event+3',
-              },
-              {
-                id: 4,
-                eventName: 'Test Event Without Image',
-                date: '2024-01-18',
-                eventDateMs: new Date('2024-01-18').getTime(),
-                district: 'Test District D',
-                location: 'Test Location D',
-                type: 'political event',
-                latitude: 17.3600,
-                longitude: 78.4700,
-                tags: ['test', 'political'],
-                distanceTravelled: 15,
-                department: 'Test Department 4',
-              },
-            ];
-            return testEvents;
-        }
-        // In production, rethrow so the error surfaces and does not get cached.
-        throw error;
+    if (process.env.NODE_ENV !== 'production') {
+        return readSheet();
     }
+    return getCachedEventsData();
 }
 
 export function revalidateEvents() {
@@ -221,64 +129,45 @@ export async function getFilteredEventsData(rangeKey: '1m' | '3m' | '6m' | '1y' 
   return all.filter(e => e.eventDateMs >= cutoffMs && e.eventDateMs <= now);
 }
 
+/** Convert an Excel cell value (string, number, Date, rich text, formula result) to a plain value. */
+function cellToValue(v: ExcelJS.CellValue): string | number | Date | undefined {
+  if (v === null || v === undefined) return undefined;
+  if (v instanceof Date || typeof v === 'string' || typeof v === 'number') return v;
+  if (typeof v === 'object') {
+    if ('result' in v) return cellToValue(v.result as ExcelJS.CellValue);
+    if ('richText' in v) return v.richText.map(t => t.text).join('');
+    if ('text' in v) return String(v.text);
+  }
+  return String(v);
+}
+
 /**
- * Core function to read and transform Google Sheet rows into EventData objects.
- * 1) Build Google Sheets client with JWT auth.
- * 2) Resolve the exact title of the "Data" worksheet from spreadsheet metadata.
- * 3) Read all rows from that worksheet.
- * 4) Normalize header row and map columns via `columnMapping`.
- * 5) Validate required columns, parse/transform each row into EventData.
+ * Read data/cm_visits.xlsx ("Data" sheet) and transform rows into EventData objects.
+ * Headers are normalized (lowercase, no spaces) and mapped via `columnMapping`.
  */
 async function readSheet(): Promise<EventData[]> {
-  console.log('Reading data from Google Sheets...');
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-  if (!spreadsheetId) {
-    throw new Error('Missing GOOGLE_SHEET_ID in your environment variables.');
-  }
-  const auth = getJwt();
-  const sheets = google.sheets({ version: 'v4', auth });
-
-  // Ensure we always read from the sheet named "Data"
-  // We first resolve the exact sheet title from metadata to avoid case/locale issues
-  let meta;
-  try {
-    meta = await sheets.spreadsheets.get({
-      spreadsheetId,
-      fields: 'sheets.properties.title'
-    });
-  } catch (e: any) {
-    console.error('Google Sheets API spreadsheets.get failed:', e?.response?.status, e?.response?.data || e?.message);
-    throw e;
-  }
-  const titles = (meta.data.sheets || []).map(s => s.properties?.title || '');
-  const dataTitle = titles.find(t => t.toLowerCase() === 'data');
-  if (!dataTitle) {
-    throw new Error('The spreadsheet does not contain a sheet named "Data". Please add/rename the sheet to "Data".');
-  }
-  // Read entire sheet (no explicit column range)
-  const range = `${dataTitle}`;
-
-  let res;
-  try {
-    res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range
-    });
-  } catch (e: any) {
-    console.error('Google Sheets API values.get failed:', e?.response?.status, e?.response?.data || e?.message);
-    throw e;
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(DATA_FILE);
+  const sheet = workbook.worksheets.find(w => w.name.toLowerCase() === DATA_SHEET.toLowerCase());
+  if (!sheet) {
+    throw new Error(`${DATA_FILE} does not contain a sheet named "${DATA_SHEET}".`);
   }
 
-  const values = res.data.values || [];
-  console.log(`Found ${values.length} rows in the spreadsheet`);
+  const values: any[][] = [];
+  sheet.eachRow({ includeEmpty: false }, (row) => {
+    const cells: any[] = [];
+    for (let c = 1; c <= sheet.columnCount; c++) {
+      cells.push(cellToValue(row.getCell(c).value));
+    }
+    values.push(cells);
+  });
   if (values.length < 2) return [];
 
   const [header, ...rows] = values;
-  console.log(`Processing ${rows.length} data rows`);
 
   const headerMap: { [key: string]: number } = {};
   header.forEach((h: string, i: number) => {
-    headerMap[h.trim().toLowerCase().replace(/\s+/g, '')] = i;
+    headerMap[String(h ?? '').trim().toLowerCase().replace(/\s+/g, '')] = i;
   });
   
   const columnMapping = {
@@ -299,7 +188,7 @@ async function readSheet(): Promise<EventData[]> {
   const requiredColumns = ['eventName', 'date'];
   for (const key of requiredColumns) {
       if (headerMap[columnMapping[key as keyof typeof columnMapping]] === undefined) {
-          throw new Error(`Missing required column in Google Sheet: The application expects a column that maps to '${key}'. Please check your sheet for a column named like '${key.replace(/([A-Z])/g, ' $1')}' or adjust the mapping.`);
+          throw new Error(`Missing required column in data/cm_visits.xlsx: The application expects a column that maps to '${key}'. Please check your sheet for a column named like '${key.replace(/([A-Z])/g, ' $1')}' or adjust the mapping.`);
       }
   }
 
@@ -329,7 +218,7 @@ async function readSheet(): Promise<EventData[]> {
     }
 
     try {
-      const parsedDate = parseDateString(dateValue);
+      const parsedDate = dateValue instanceof Date ? dateValue : parseDateString(String(dateValue));
 
       if (!parsedDate) {
         console.log(`Skipping row ${index + 2}: Invalid date format (${dateValue})`);
@@ -369,7 +258,7 @@ async function readSheet(): Promise<EventData[]> {
         eventDateMs,
       };
     } catch (e) {
-      console.error(`Error parsing row ${index + 2} from Google Sheet`, r, e);
+      console.error(`Error parsing row ${index + 2} from data/cm_visits.xlsx`, r, e);
       return null;
     }
   }).filter((event): event is NonNullable<typeof event> => event !== null);

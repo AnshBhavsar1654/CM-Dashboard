@@ -1,4 +1,4 @@
-// Fetches a fresh copy of events from Google Sheets and returns the number of events fetched
+// Re-reads events from data/cm_visits.xlsx and returns the number of events
 
 'use server'
 
@@ -10,7 +10,7 @@ export async function revalidateAndFetchEvents() {
   // Invalidate the cache tag; the next read below goes straight to the sheet.
   revalidateEvents();
 
-  console.log('Fetching fresh data from Google Sheets...');
+  console.log('Reloading events from data file...');
   const events = await getEventsData()
   console.log(`Fetched ${events.length} events`);
   return events.length
