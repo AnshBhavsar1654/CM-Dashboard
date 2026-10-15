@@ -19,7 +19,7 @@ npm install
 npm run dev
 ```
 
-The app runs at [http://localhost:6000](http://localhost:6000).
+The app runs at [http://localhost:4000](http://localhost:4000).
 
 ## Environment Variables
 
