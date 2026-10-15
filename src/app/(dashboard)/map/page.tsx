@@ -1,8 +1,8 @@
-import { getFilteredEventsData } from "@/lib/events-data"
+import { getEventsData } from "@/lib/events-data"
 import { MapView } from "@/components/map/map-view"
 
 export default async function MapPage() {
-  const events = await getFilteredEventsData("2y")
+  const events = await getEventsData()
 
   return (
     <div className="space-y-6">

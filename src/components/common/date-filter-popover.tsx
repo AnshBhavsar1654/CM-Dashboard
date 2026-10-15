@@ -40,7 +40,7 @@ export function DateFilterPopover({
   }
 
   const activeLabel = hasFilter && dateRange?.from
-    ? `${format(dateRange.from, "MMM d")}${dateRange.to ? ` – ${format(dateRange.to, "MMM d")}` : ""}`
+    ? `${format(dateRange.from, "MMM d, yyyy")}${dateRange.to ? ` – ${format(dateRange.to, "MMM d, yyyy")}` : ""}`
     : null
 
   return (

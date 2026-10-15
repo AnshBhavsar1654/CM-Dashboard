@@ -66,7 +66,8 @@ function applyFilters(data: EventData[], filters: FilterState): EventData[] {
   return data.filter((event) => {
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      if (!event.eventName.toLowerCase().includes(q)) return false;
+      const haystack = `${event.eventName} ${event.location} ${event.district}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
     }
     if (filters.districts.length > 0 && !filters.districts.includes(event.district)) return false;
     if (filters.types.length > 0 && !filters.types.includes(event.type)) return false;
@@ -135,6 +136,52 @@ function FilterChip({
         <X className="h-3 w-3" onClick={(e) => { e.stopPropagation(); onRemove(); }} />
       )}
     </button>
+  );
+}
+
+const CHIP_LIMIT = 10;
+
+function ChipRow({
+  label,
+  values,
+  selected,
+  onToggle,
+}: {
+  label: string;
+  values: string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  const [expanded, setExpanded] = React.useState(false);
+  // Always keep selected chips visible even when the row is collapsed
+  const visible = expanded
+    ? values
+    : [...values.slice(0, CHIP_LIMIT), ...selected.filter((v) => values.indexOf(v) >= CHIP_LIMIT)];
+  const hidden = values.length - visible.length;
+
+  return (
+    <div className="flex items-start gap-2">
+      <span className="text-xs font-medium text-muted-foreground w-20 shrink-0 pt-1.5">{label}</span>
+      <div className="flex items-center gap-2 flex-wrap min-w-0">
+        {visible.map((v) => (
+          <FilterChip
+            key={v}
+            label={v}
+            active={selected.includes(v)}
+            onClick={() => onToggle(v)}
+            onRemove={selected.includes(v) ? () => onToggle(v) : undefined}
+          />
+        ))}
+        {values.length > CHIP_LIMIT && (expanded || hidden > 0) && (
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="text-xs font-medium text-primary hover:underline px-1"
+          >
+            {expanded ? "Show less" : `+${hidden} more`}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -238,8 +285,10 @@ function EventDetailDrawer({
           {event.imgLink && (
             <div className="pt-3 border-t">
               <p className="text-xs text-muted-foreground mb-2">Event Photo</p>
+              {/* eslint-disable-next-line @next/next/no-img-element -- arbitrary remote hosts, routed through our proxy */}
               <img
-                src={event.imgLink}
+                src={`/api/image-proxy?url=${encodeURIComponent(event.imgLink)}`}
+                loading="lazy"
                 alt={event.eventName}
                 className="rounded-lg w-full max-h-64 object-cover"
               />
@@ -251,10 +300,10 @@ function EventDetailDrawer({
   );
 }
 
-export function EventsTable({ data }: { data: EventData[] }) {
+export function EventsTable({ data, initialDistrict }: { data: EventData[]; initialDistrict?: string }) {
   const [filters, setFilters] = React.useState<FilterState>({
     search: "",
-    districts: [],
+    districts: initialDistrict ? [initialDistrict] : [],
     types: [],
     departments: [],
   });
@@ -314,7 +363,6 @@ export function EventsTable({ data }: { data: EventData[] }) {
 
   const exportToCSV = async () => {
     setExportState("loading");
-    await new Promise((r) => setTimeout(r, 600));
     const headers = ["Event Name", "Date", "Type", "District", "Location", "Latitude", "Longitude", "Department", "Distance (km)"];
     const csvRows = [
       headers.join(","),
@@ -322,17 +370,18 @@ export function EventsTable({ data }: { data: EventData[] }) {
         [
           `"${event.eventName.replace(/"/g, '""')}"`,
           `"${new Date(event.date).toISOString().slice(0, 10)}"`,
-          `"${event.type}"`,
-          `"${event.district}"`,
+          `"${event.type.replace(/"/g, '""')}"`,
+          `"${event.district.replace(/"/g, '""')}"`,
           `"${event.location.replace(/"/g, '""')}"`,
           event.latitude,
           event.longitude,
-          `"${event.department}"`,
+          `"${event.department.replace(/"/g, '""')}"`,
           event.distanceTravelled.toFixed(2),
         ].join(",")
       ),
     ];
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    // BOM so Excel opens UTF-8 (e.g. Gujarati text) correctly
+    const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -357,11 +406,11 @@ export function EventsTable({ data }: { data: EventData[] }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-4">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
           <CardTitle>Event Details</CardTitle>
           <CardDescription>
-            A comprehensive list of all outreach events within the selected date range.
+            A comprehensive list of all recorded outreach events.
           </CardDescription>
         </div>
         <Button
@@ -388,7 +437,7 @@ export function EventsTable({ data }: { data: EventData[] }) {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search events by name..."
+              placeholder="Search by event, venue or district..."
               value={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
               className="pl-9"
@@ -397,42 +446,9 @@ export function EventsTable({ data }: { data: EventData[] }) {
 
           {/* Filter chips */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">District</span>
-              {districts.map((d) => (
-                <FilterChip
-                  key={d}
-                  label={d}
-                  active={filters.districts.includes(d)}
-                  onClick={() => toggleFilter("districts", d)}
-                  onRemove={filters.districts.includes(d) ? () => toggleFilter("districts", d) : undefined}
-                />
-              ))}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">Type</span>
-              {types.map((t) => (
-                <FilterChip
-                  key={t}
-                  label={t}
-                  active={filters.types.includes(t)}
-                  onClick={() => toggleFilter("types", t)}
-                  onRemove={filters.types.includes(t) ? () => toggleFilter("types", t) : undefined}
-                />
-              ))}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">Department</span>
-              {departments.map((d) => (
-                <FilterChip
-                  key={d}
-                  label={d}
-                  active={filters.departments.includes(d)}
-                  onClick={() => toggleFilter("departments", d)}
-                  onRemove={filters.departments.includes(d) ? () => toggleFilter("departments", d) : undefined}
-                />
-              ))}
-            </div>
+            <ChipRow label="District" values={districts} selected={filters.districts} onToggle={(v) => toggleFilter("districts", v)} />
+            <ChipRow label="Type" values={types} selected={filters.types} onToggle={(v) => toggleFilter("types", v)} />
+            <ChipRow label="Department" values={departments} selected={filters.departments} onToggle={(v) => toggleFilter("departments", v)} />
           </div>
 
           {/* Active state bar */}
@@ -547,7 +563,7 @@ export function EventsTable({ data }: { data: EventData[] }) {
 
           {/* Pagination */}
           {sortedData.length > 0 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-t">
               <div className="text-sm text-muted-foreground">
                 Showing {startIndex + 1}–{Math.min(startIndex + eventsPerPage, sortedData.length)} of{" "}
                 {sortedData.length} events

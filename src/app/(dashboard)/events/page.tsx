@@ -1,8 +1,13 @@
-import { getFilteredEventsData } from "@/lib/events-data"
+import { getEventsData } from "@/lib/events-data"
 import { EventsTable } from "@/components/events/events-table"
 
-export default async function EventsPage() {
-  const events = await getFilteredEventsData("2y")
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ district?: string | string[] }>
+}) {
+  const [events, params] = await Promise.all([getEventsData(), searchParams])
+  const district = typeof params.district === "string" ? params.district : undefined
 
   return (
     <div className="space-y-6">
@@ -11,7 +16,7 @@ export default async function EventsPage() {
         <p className="text-sm text-muted-foreground">Complete list of all outreach events with sorting and export.</p>
       </div>
 
-      <EventsTable data={events} />
+      <EventsTable data={events} initialDistrict={district} />
     </div>
   )
 }

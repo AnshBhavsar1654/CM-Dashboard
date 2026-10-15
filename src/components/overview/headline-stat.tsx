@@ -16,9 +16,11 @@ interface HeadlineStatProps {
   filteredEvents: EventData[]
   filterFn?: (event: EventData) => boolean
   accent?: string
+  /** Show the month-over-month event-count sparkline (only meaningful for event counts). */
+  showTrend?: boolean
 }
 
-export function HeadlineStat({ title, value, subtitle, icon: Icon, allEvents, filteredEvents: _filteredEvents, filterFn, accent: _accent }: HeadlineStatProps) {
+export function HeadlineStat({ title, value, subtitle, icon: Icon, allEvents, filteredEvents: _filteredEvents, filterFn, accent: _accent, showTrend = false }: HeadlineStatProps) {
   const numericValue = typeof value === "number" ? value : null
   const counted = useCountUp(numericValue ?? 0, 800)
   const displayValue = numericValue !== null ? counted.toLocaleString("en-IN", { maximumFractionDigits: 0 }) : value
@@ -35,7 +37,7 @@ export function HeadlineStat({ title, value, subtitle, icon: Icon, allEvents, fi
             </div>
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</span>
           </div>
-          <TrendSparkline events={allEvents} filterFn={filterFn} />
+          {showTrend && <TrendSparkline events={allEvents} filterFn={filterFn} />}
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-headline font-semibold text-foreground tabular-nums">

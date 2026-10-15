@@ -10,22 +10,25 @@ import { CategoryBreakdown } from "@/components/overview/category-breakdown"
 import { PhotoCarousel } from "@/components/overview/photo-carousel"
 import { DateFilterPopover } from "@/components/common/date-filter-popover"
 import type { EventData } from "@/lib/types"
+import { TOTAL_DISTRICTS, isGujaratDistrict } from "@/lib/districts"
 
 export function OverviewWrapper({ events }: { events: EventData[] }) {
   const [dateRange, setDateRange] = React.useState<DateRange>()
 
   const filteredEvents = React.useMemo(() => {
     if (!dateRange?.from && !dateRange?.to) return events
-    return events.filter(event => {
-      const d = new Date(event.date)
-      if (dateRange?.from && d < startOfMonth(dateRange.from)) return false
-      if (dateRange?.to && d > endOfMonth(dateRange.to)) return false
-      return true
-    })
+    const fromMs = dateRange?.from ? startOfMonth(dateRange.from).getTime() : -Infinity
+    const toMs = dateRange?.to ? endOfMonth(dateRange.to).getTime() : Infinity
+    return events.filter(e => e.eventDateMs >= fromMs && e.eventDateMs <= toMs)
   }, [events, dateRange])
 
   const totalDistance = React.useMemo(
     () => filteredEvents.reduce((sum, e) => sum + e.distanceTravelled, 0),
+    [filteredEvents]
+  )
+
+  const districtsCovered = React.useMemo(
+    () => new Set(filteredEvents.map(e => e.district).filter(isGujaratDistrict)).size,
     [filteredEvents]
   )
 
@@ -49,6 +52,7 @@ export function OverviewWrapper({ events }: { events: EventData[] }) {
               title: "Total Events",
               value: filteredEvents.length,
               icon: Layers,
+              showTrend: true,
             },
             {
               title: "Distance Traveled",
@@ -58,7 +62,7 @@ export function OverviewWrapper({ events }: { events: EventData[] }) {
             },
             {
               title: "Districts Covered",
-              value: `${new Set(filteredEvents.filter(e => e.district && e.district !== "Out of State").map(e => e.district)).size}/33`,
+              value: `${districtsCovered}/${TOTAL_DISTRICTS}`,
               icon: MapPin,
             },
           ]
@@ -72,6 +76,7 @@ export function OverviewWrapper({ events }: { events: EventData[] }) {
                 icon={s.icon}
                 allEvents={events}
                 filteredEvents={filteredEvents}
+                showTrend={"showTrend" in s && s.showTrend}
               />
             </div>
           )

@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { getFilteredEventsData } from "@/lib/events-data"
+import { getEventsData } from "@/lib/events-data"
 import { EventTypeChart } from "@/components/distribution/event-type-chart"
 import { DistrictEventChart } from "@/components/distribution/district-event-chart"
 import {
@@ -55,7 +55,7 @@ function ChartSkeleton() {
 }
 
 async function EventCharts() {
-  const events = await getFilteredEventsData("2y");
+  const events = await getEventsData();
   return (
     <>
       <EventTypeChart data={events} />

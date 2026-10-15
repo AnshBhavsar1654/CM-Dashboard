@@ -4,19 +4,7 @@ import * as React from "react"
 import dynamic from "next/dynamic"
 import type { EventData } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-const TOTAL_DISTRICTS = 33
-
-const GUJARAT_DISTRICTS = [
-  "Ahmedabad", "Gandhinagar", "Mahesana", "Banaskantha", "Sabarkantha",
-  "Aravalli", "Patan", "Rajkot", "Surat", "Vadodara", "Anand", "Amreli",
-  "Kheda", "Kutch", "Bhavnagar", "Dahod", "Panchmahal", "Porbandar",
-  "Gir Somnath", "Mahisagar", "Narmada", "Bharuch", "Jamnagar", "Navsari",
-  "Valsad", "Junagadh", "Surendranagar", "Tapi", "Dang", "Devbhoomi Dwarka",
-  "Morbi", "Botad", "Chhota Udepur",
-]
-
-const GEOJSON_URL = "https://cdn.jsdelivr.net/gh/udit-001/india-maps-data@2884453/geojson/states/gujarat.geojson"
+import { GUJARAT_DISTRICTS, TOTAL_DISTRICTS, escapeHtml, isGujaratDistrict, loadGujaratGeojson, normalizeDistrict } from "@/lib/districts"
 
 const GujaratMap = dynamic(async () => {
   const L = await import("leaflet")
@@ -61,8 +49,7 @@ const GujaratMap = dynamic(async () => {
             key={JSON.stringify([...coveredSet])}
             data={geojson}
             style={(feature) => {
-              const name = feature?.properties?.district
-              const isCovered = coveredSet.has(name)
+              const isCovered = coveredSet.has(normalizeDistrict(feature?.properties?.district))
               return {
                 fillColor: isCovered ? "#0d9488" : "#d97706",
                 fillOpacity: isCovered ? 0.6 : 0.35,
@@ -72,10 +59,10 @@ const GujaratMap = dynamic(async () => {
               }
             }}
             onEachFeature={(feature, layer) => {
-              const name = feature.properties?.district || "Unknown"
+              const name = normalizeDistrict(feature.properties?.district) || "Unknown"
               const isCovered = coveredSet.has(name)
               layer.bindTooltip(
-                `<div style="font-size:12px;font-weight:500">${name}</div>
+                `<div style="font-size:12px;font-weight:500">${escapeHtml(name)}</div>
                  <div style="font-size:10px;color:${isCovered ? "#0d9488" : "#d97706"}">
                    ${isCovered ? "Visited" : "Not visited"}
                  </div>`,
@@ -129,9 +116,7 @@ export function DistrictCoverageRing({ events }: DistrictCoverageRingProps) {
   const [geojson, setGeojson] = React.useState<any>(null)
 
   const { covered, notCovered, coveredSet } = React.useMemo(() => {
-    const coveredSet = new Set(
-      events.filter(e => e.district && e.district !== "Out of State").map(e => e.district)
-    )
+    const coveredSet = new Set(events.map(e => e.district).filter(isGujaratDistrict))
     return {
       covered: coveredSet.size,
       notCovered: GUJARAT_DISTRICTS.filter(d => !coveredSet.has(d)),
@@ -140,10 +125,11 @@ export function DistrictCoverageRing({ events }: DistrictCoverageRingProps) {
   }, [events])
 
   React.useEffect(() => {
-    fetch(GEOJSON_URL)
-      .then(r => r.json())
-      .then(setGeojson)
+    let cancelled = false
+    loadGujaratGeojson()
+      .then(g => { if (!cancelled) setGeojson(g) })
       .catch(() => {})
+    return () => { cancelled = true }
   }, [])
 
   return (
@@ -173,7 +159,7 @@ export function DistrictCoverageRing({ events }: DistrictCoverageRingProps) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-palette-covered font-medium">All 33 districts covered!</p>
+                <p className="text-sm text-palette-covered font-medium">All {TOTAL_DISTRICTS} districts covered!</p>
               )}
             </div>
           </div>

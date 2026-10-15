@@ -124,7 +124,8 @@ const RechartsArea = dynamic(async () => {
             angle={-45}
             textAnchor="end"
             height={55}
-            interval={0}
+            interval={data.length > 24 ? "preserveStartEnd" : 0}
+            minTickGap={8}
             tick={{ fontSize: 11, fontFamily: "Inter, sans-serif", fill: "hsl(var(--muted-foreground))", opacity: 0.85 }}
           />
           <m.YAxis
@@ -222,36 +223,38 @@ export function MonthlyEventChart({
   description?: string;
 }) {
   const chartData = React.useMemo(() => {
-    const monthData: { [key: string]: { total: number; types: Record<string, number> } } = {};
+    const fromMs = dateRange?.from ? startOfMonth(dateRange.from).getTime() : -Infinity
+    const toMs = dateRange?.to ? endOfMonth(dateRange.to).getTime() : Infinity
+    const eventsInRange = data.filter(e => e.eventDateMs >= fromMs && e.eventDateMs <= toMs)
+    if (eventsInRange.length === 0) return []
 
-    const eventsInRange = data.filter(event => {
-      const eventDate = new Date(event.date);
-      if (dateRange?.from && eventDate < startOfMonth(dateRange.from)) return false;
-      if (dateRange?.to && eventDate > endOfMonth(dateRange.to)) return false;
-      return true;
-    });
+    // Bucket by numeric month index (year * 12 + month) so sorting never depends on string date parsing
+    const buckets = new Map<number, { total: number; types: Record<string, number> }>()
+    let minIdx = Infinity
+    let maxIdx = -Infinity
+    for (const event of eventsInRange) {
+      const d = new Date(event.eventDateMs)
+      const idx = d.getFullYear() * 12 + d.getMonth()
+      minIdx = Math.min(minIdx, idx)
+      maxIdx = Math.max(maxIdx, idx)
+      const bucket = buckets.get(idx) ?? { total: 0, types: {} }
+      bucket.total++
+      const eventType = event.type || 'Other'
+      bucket.types[eventType] = (bucket.types[eventType] || 0) + 1
+      buckets.set(idx, bucket)
+    }
 
-    eventsInRange.forEach(event => {
-      const eventDate = new Date(event.date);
-      const monthKey = format(eventDate, "MMM yyyy");
-      if (!monthData[monthKey]) {
-        monthData[monthKey] = { total: 0, types: {} };
+    // Include empty months so gaps show up as zeros instead of being silently skipped
+    const baseData = Array.from({ length: maxIdx - minIdx + 1 }, (_, i) => {
+      const idx = minIdx + i
+      const bucket = buckets.get(idx)
+      return {
+        name: format(new Date(Math.floor(idx / 12), idx % 12, 1), "MMM yyyy"),
+        value: bucket?.total ?? 0,
+        types: bucket?.types ?? {},
+        index: i,
       }
-      monthData[monthKey].total++;
-      const eventType = event.type || 'Other';
-      monthData[monthKey].types[eventType] = (monthData[monthKey].types[eventType] || 0) + 1;
-    });
-
-    const sortedKeys = Object.keys(monthData).sort((a, b) => {
-      return new Date(a).getTime() - new Date(b).getTime();
-    });
-
-    const baseData = sortedKeys.map((label, i) => ({
-      name: label,
-      value: monthData[label].total,
-      types: monthData[label].types,
-      index: i,
-    }));
+    })
 
     const rollingAvgs = computeRollingAverage(baseData, 3);
 

@@ -14,7 +14,8 @@ export function DashboardHeader() {
   const router = useRouter();
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const { collapsed, toggle } = useSidebar();
+  const { collapsed, isMobile, mobileOpen, toggle } = useSidebar();
+  const showOpenIcon = isMobile ? !mobileOpen : collapsed;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -44,15 +45,15 @@ export function DashboardHeader() {
           "flex h-8 w-8 items-center justify-center rounded-md",
           "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         )}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-label={showOpenIcon ? "Open sidebar" : "Close sidebar"}
       >
-        {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        {showOpenIcon ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
       </button>
       <div className="flex items-center gap-2">
         <ThemeToggle />
         <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
-          <RefreshCw className={`mr-2 h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          <RefreshCw className={`h-3.5 w-3.5 sm:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span className="sr-only sm:not-sr-only">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
         </Button>
       </div>
     </header>

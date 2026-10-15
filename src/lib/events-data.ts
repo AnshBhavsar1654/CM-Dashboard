@@ -1,10 +1,12 @@
-'use server';
+// Server-only data access. Intentionally NOT a 'use server' module: that would
+// expose every export below as a publicly callable server action endpoint.
 
 import { google } from 'googleapis';
 import type { EventData } from "./types";
 import 'dotenv/config';
 import { getHomeCoordinates } from './admin-config';
 import { unstable_cache as cache, revalidateTag } from 'next/cache';
+import { normalizeDistrict } from './districts';
 
 // Create a Google JWT auth client for the service account using readonly Sheets scope.
 function getJwt() {
@@ -42,7 +44,8 @@ function parseDateString(dateStr: string): Date | null {
         
         // Create date using constructor to avoid string parsing issues
         const date = new Date(year, month, day);
-        if (!isNaN(date.getTime())) {
+        // Reject overflowed dates like 31/02/2025 instead of silently rolling over
+        if (date.getMonth() === month && date.getDate() === day) {
             return date;
         }
     }
@@ -60,7 +63,7 @@ function parseDateString(dateStr: string): Date | null {
 
         if (!isNaN(day) && month !== undefined && !isNaN(year)) {
             const date = new Date(year, month, day);
-            if (!isNaN(date.getTime())) {
+            if (date.getMonth() === month && date.getDate() === day) {
                 return date;
             }
         }
@@ -191,7 +194,7 @@ export async function getEventsData(): Promise<EventData[]> {
     }
 }
 
-export async function revalidateEvents() {
+export function revalidateEvents() {
   revalidateTag('events-data');
 }
 
@@ -355,7 +358,7 @@ async function readSheet(): Promise<EventData[]> {
         eventName: eventName,
         date: eventDate,
         type: String(rowData[columnMapping.type] || '').trim(),
-        district: String(rowData[columnMapping.district] || '').trim(),
+        district: normalizeDistrict(rowData[columnMapping.district]),
         location: String(rowData[columnMapping.location] || '').trim(),
         latitude: eventLat,
         longitude: eventLng,

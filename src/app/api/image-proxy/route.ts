@@ -1,6 +1,20 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+// Reject loopback / private / link-local targets so the proxy can't be used to reach internal services
+function isBlockedHost(hostname: string): boolean {
+	const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+	if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.internal') || h.endsWith('.local')) return true;
+	if (h === '::1' || h.startsWith('fc') || h.startsWith('fd') || h.startsWith('fe80')) return h.includes(':');
+	const m = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+	if (!m) return false;
+	const [a, b] = [Number(m[1]), Number(m[2])];
+	return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) ||
+		(a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+}
+
 export async function GET(request: Request): Promise<Response> {
 	try {
 		const requestUrl = new URL(request.url);
@@ -22,8 +36,9 @@ export async function GET(request: Request): Promise<Response> {
 			return new Response('Only https protocol is allowed', { status: 400 });
 		}
 
-		// Optional: Add size limits to prevent abuse
-		// We could also add referrer checks or other security measures here
+		if (isBlockedHost(targetUrl.hostname)) {
+			return new Response('Host not allowed', { status: 400 });
+		}
 
 		const upstreamResponse = await fetch(targetUrl.toString(), {
 			headers: {
@@ -32,8 +47,13 @@ export async function GET(request: Request): Promise<Response> {
 				'Accept': 'image/*,*/*;q=0.8',
 				// Intentionally omit Referer to avoid hotlink protections that block foreign referers
 			},
-			cache: 'no-store',
+			redirect: 'follow',
+			signal: AbortSignal.timeout(10_000),
 		});
+
+		if (upstreamResponse.redirected && isBlockedHost(new URL(upstreamResponse.url).hostname)) {
+			return new Response('Host not allowed', { status: 400 });
+		}
 
 		if (!upstreamResponse.ok || !upstreamResponse.body) {
 			return new Response(`Failed to fetch image: ${upstreamResponse.status} ${upstreamResponse.statusText}`, { 
@@ -49,12 +69,17 @@ export async function GET(request: Request): Promise<Response> {
 			return new Response('URL does not point to an image', { status: 400 });
 		}
 
+		const contentLength = Number(upstreamResponse.headers.get('content-length') || 0);
+		if (contentLength > MAX_BYTES) {
+			return new Response('Image too large', { status: 413 });
+		}
+
 		return new Response(upstreamResponse.body, {
 			status: 200,
 			headers: {
 				'Content-Type': contentType,
-				// Disable caching to avoid stale responses causing same image to appear
-				'Cache-Control': 'no-store, no-cache, must-revalidate',
+				// Image URLs are content-addressed in practice, so let browsers and the CDN cache them
+				'Cache-Control': 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400',
 				...(etag ? { ETag: etag } : {}),
 			},
 		});

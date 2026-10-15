@@ -29,7 +29,11 @@ function verify(signed: string): string | null {
   const value = signed.slice(0, idx)
   const sig = signed.slice(idx + 1)
   const expected = crypto.createHmac('sha256', getSecret()).update(value).digest('base64url')
-  return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) ? value : null
+  const a = Buffer.from(sig)
+  const b = Buffer.from(expected)
+  // timingSafeEqual throws on length mismatch, so a tampered cookie would crash the request
+  if (a.length !== b.length) return null
+  return crypto.timingSafeEqual(a, b) ? value : null
 }
 
 export async function getSession(): Promise<UserSession | null> {

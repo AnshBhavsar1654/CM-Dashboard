@@ -1,6 +1,8 @@
 import * as React from 'react'
 import L from 'leaflet'
 import { MapContainer, TileLayer, Marker, CircleMarker, useMap, useMapEvents } from 'react-leaflet'
+import { useRouter } from 'next/navigation'
+import { GUJARAT_DISTRICTS, escapeHtml, loadGujaratGeojson, normalizeDistrict } from '@/lib/districts'
 import 'leaflet/dist/leaflet.css'
 import type { EventData } from '@/lib/types'
 import { MapLegend } from './map-legend'
@@ -9,17 +11,6 @@ import { DistrictTooltip } from './district-tooltip'
 const GUJARAT_BOUNDS: L.LatLngBoundsExpression = [
   [20.0, 68.0],
   [25.0, 75.0]
-]
-
-const GEOJSON_URL = 'https://cdn.jsdelivr.net/gh/udit-001/india-maps-data@2884453/geojson/states/gujarat.geojson'
-
-const GUJARAT_DISTRICTS = [
-  'Ahmedabad', 'Gandhinagar', 'Mahesana', 'Banaskantha', 'Sabarkantha',
-  'Aravalli', 'Patan', 'Rajkot', 'Surat', 'Vadodara', 'Anand', 'Amreli',
-  'Kheda', 'Kutch', 'Bhavnagar', 'Dahod', 'Panchmahal', 'Porbandar',
-  'Gir Somnath', 'Mahisagar', 'Narmada', 'Bharuch', 'Jamnagar', 'Navsari',
-  'Valsad', 'Junagadh', 'Surendranagar', 'Tapi', 'Dang', 'Devbhoomi Dwarka',
-  'Morbi', 'Botad', 'Chhota Udepur',
 ]
 
 L.Icon.Default.mergeOptions({
@@ -100,14 +91,13 @@ const DistrictBoundary = React.memo(function DistrictBoundary({
   React.useEffect(() => {
     let cancelled = false
 
-    fetch(GEOJSON_URL)
-      .then(r => r.json())
+    loadGujaratGeojson()
       .then((geojson: any) => {
         if (cancelled) return
 
         const geoLayer = L.geoJSON(geojson, {
           style: (feature) => {
-            const name = feature?.properties?.district
+            const name = normalizeDistrict(feature?.properties?.district)
             const count = districtCounts[name] || 0
             const covered = count > 0
             return {
@@ -119,7 +109,7 @@ const DistrictBoundary = React.memo(function DistrictBoundary({
             }
           },
           onEachFeature: (feature, layer) => {
-            const name = feature.properties?.district || 'Unknown'
+            const name = normalizeDistrict(feature.properties?.district) || 'Unknown'
             const count = districtCounts[name] || 0
             const covered = count > 0
             const topTypes = districtTopTypes[name] || []
@@ -140,7 +130,10 @@ const DistrictBoundary = React.memo(function DistrictBoundary({
             })
             layer.on('click', () => onClick(name))
           }
-        }).addTo(map)
+        })
+        // The effect may have been cleaned up while the GeoJSON was loading
+        if (cancelled) return
+        geoLayer.addTo(map)
         layerRef.current = geoLayer
       })
       .catch(() => {})
@@ -225,9 +218,9 @@ function EventMarkers({
                 this.setStyle({ radius: 9, weight: 3 })
                 this.bindTooltip(
                   `<div style="min-width:160px">
-                    <div style="font-weight:600;font-size:13px;margin-bottom:4px;line-height:1.3">${event.eventName}</div>
-                    <div style="font-size:11px;color:#666;margin-bottom:2px">${event.district} &middot; ${event.location}</div>
-                    <div style="font-size:11px;color:#666;margin-bottom:2px">${event.type}</div>
+                    <div style="font-weight:600;font-size:13px;margin-bottom:4px;line-height:1.3">${escapeHtml(event.eventName)}</div>
+                    <div style="font-size:11px;color:#666;margin-bottom:2px">${escapeHtml(event.district)} &middot; ${escapeHtml(event.location)}</div>
+                    <div style="font-size:11px;color:#666;margin-bottom:2px">${escapeHtml(event.type)}</div>
                     <div style="font-size:10px;color:#999">${new Date(event.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                   </div>`,
                   { direction: 'top', offset: [0, -10], className: 'event-marker-tooltip' }
@@ -271,14 +264,16 @@ const LeafletMap = ({ data, selectedDistrict }: LeafletMapProps) => {
     const centroids: Record<string, { lat: number; lng: number }> = {}
     GUJARAT_DISTRICTS.forEach(d => { counts[d] = 0; topTypes[d] = [] })
 
+    const byDistrict: Record<string, EventData[]> = {}
     data.forEach(e => {
       if (e.district && counts[e.district] !== undefined) {
         counts[e.district]++
+        ;(byDistrict[e.district] ||= []).push(e)
       }
     })
 
     Object.keys(counts).forEach(d => {
-      const events = data.filter(e => e.district === d)
+      const events = byDistrict[d] || []
       const types = events.reduce((acc, e) => { acc[e.type] = (acc[e.type] || 0) + 1; return acc }, {} as Record<string, number>)
       topTypes[d] = Object.entries(types).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => t)
 
@@ -298,9 +293,10 @@ const LeafletMap = ({ data, selectedDistrict }: LeafletMapProps) => {
     }
   }, [data])
 
+  const router = useRouter()
   const handleDistrictClick = React.useCallback((name: string) => {
-    window.location.href = `/events?district=${encodeURIComponent(name)}`
-  }, [])
+    router.push(`/events?district=${encodeURIComponent(name)}`)
+  }, [router])
 
   const showDistrictMarkers = zoom < 10
 

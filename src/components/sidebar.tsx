@@ -24,14 +24,26 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { collapsed } = useSidebar()
+  const { collapsed, mobileOpen, closeMobile } = useSidebar()
 
   return (
+    <>
+    {/* Mobile backdrop */}
+    <div
+      aria-hidden
+      onClick={closeMobile}
+      className={cn(
+        "fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] transition-opacity duration-300 md:hidden",
+        mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+      )}
+    />
     <aside
       className={cn(
         "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border bg-sidebar",
-        "transition-[width] duration-300 ease-in-out",
-        collapsed ? "w-16" : "w-60"
+        "transition-[width,transform] duration-300 ease-in-out",
+        collapsed ? "w-16" : "w-60",
+        // Off-canvas drawer below md, always visible from md up
+        mobileOpen ? "translate-x-0 shadow-xl" : "-translate-x-full md:translate-x-0"
       )}
     >
       {/* ── Logo ── */}
@@ -61,7 +73,7 @@ export function Sidebar() {
       {/* ── Navigation ── */}
       <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
         {navItems.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
           return (
             <Link
               key={item.href}
@@ -117,5 +129,6 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   )
 }

@@ -12,9 +12,16 @@ interface PhotoCarouselProps {
   events: EventData[]
 }
 
+// Cap the slideshow so the indicator bar stays usable with large datasets
+const MAX_PHOTOS = 12
+
 export function PhotoCarousel({ events }: PhotoCarouselProps) {
+  // Most recent photos first
   const eventsWithImages = React.useMemo(
-    () => events.filter(e => e.imgLink && e.imgLink.trim() !== ""),
+    () => events
+      .filter(e => e.imgLink && e.imgLink.trim() !== "")
+      .sort((a, b) => b.eventDateMs - a.eventDateMs)
+      .slice(0, MAX_PHOTOS),
     [events]
   )
 
@@ -46,10 +53,12 @@ export function PhotoCarousel({ events }: PhotoCarouselProps) {
     )
   }
 
-  const event = eventsWithImages[idx]
+  // Guard against a stale index for one render after the event list shrinks
+  const safeIdx = idx < eventsWithImages.length ? idx : 0
+  const event = eventsWithImages[safeIdx]
   const src = useDirect
     ? event.imgLink!
-    : `/api/image-proxy?url=${encodeURIComponent(event.imgLink!)}&i=${idx}`
+    : `/api/image-proxy?url=${encodeURIComponent(event.imgLink!)}`
 
   return (
     <Card className="h-full flex flex-col overflow-hidden">
@@ -73,7 +82,7 @@ export function PhotoCarousel({ events }: PhotoCarouselProps) {
                 </div>
               )}
               <Image
-                key={`${idx}-${event.imgLink}`}
+                key={`${safeIdx}-${event.imgLink}`}
                 src={src}
                 alt={event.eventName}
                 fill
@@ -100,14 +109,14 @@ export function PhotoCarousel({ events }: PhotoCarouselProps) {
           {eventsWithImages.length > 1 && (
             <>
               <Button
-                variant="secondary" size="icon"
+                variant="secondary" size="icon" aria-label="Previous photo"
                 className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 bg-background/70 hover:bg-background/90 backdrop-blur-sm"
                 onClick={() => setIdx(p => (p - 1 + eventsWithImages.length) % eventsWithImages.length)}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
-                variant="secondary" size="icon"
+                variant="secondary" size="icon" aria-label="Next photo"
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 bg-background/70 hover:bg-background/90 backdrop-blur-sm"
                 onClick={() => setIdx(p => (p + 1) % eventsWithImages.length)}
               >
@@ -125,7 +134,7 @@ export function PhotoCarousel({ events }: PhotoCarouselProps) {
                 key={i}
                 onClick={() => setIdx(i)}
                 className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                  i === idx ? "bg-primary" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"
+                  i === safeIdx ? "bg-primary" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"
                 }`}
                 aria-label={`Go to slide ${i + 1}`}
               />
