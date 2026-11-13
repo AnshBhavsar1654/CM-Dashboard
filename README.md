@@ -9,7 +9,6 @@ A dashboard for visualizing CM Outreach Activities in Gujarat, built with Next.j
 - **Charts:** Recharts
 - **Maps:** Leaflet + React-Leaflet
 - **Data:** local Excel file (`exceljs`)
-- **Database:** PostgreSQL (via `pg`, optional, only for `add-user`)
 - **Deployment:** Vercel
 
 ## Getting Started
@@ -23,7 +22,7 @@ The app runs at [http://localhost:4000](http://localhost:4000).
 
 ## Environment Variables
 
-The dashboard needs no environment variables. `PG*` and `AUTH_SECRET` are only used by the optional `add-user` script and the (currently disabled) login code.
+The dashboard needs no environment variables.
 
 ## Data
 
@@ -37,4 +36,3 @@ All data comes from `data/cm_visits.xlsx` (sheet `Data`, one row per event; see 
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run lint` | Run linter |
-| `npm run add-user` | Add a user to the database |
